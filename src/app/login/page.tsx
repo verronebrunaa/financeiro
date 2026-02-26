@@ -12,17 +12,7 @@ import {
   FiEyeOff,
   FiEye,
   FiUser,
-  FiPhone,
 } from "react-icons/fi";
-
-function formatPhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length <= 2) return `(${digits}`;
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  if (digits.length <= 11)
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
-}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -32,7 +22,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
 
   const router = useRouter();
   const toast = useToast();
@@ -41,7 +30,6 @@ export default function LoginPage() {
     setEmail("");
     setPassword("");
     setFullName("");
-    setPhone("");
   }
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
@@ -55,7 +43,6 @@ export default function LoginPage() {
           options: {
             data: {
               full_name: fullName,
-              phone: phone,
             },
           },
         });
@@ -153,25 +140,6 @@ export default function LoginPage() {
                     />
                   </div>
                 </div>
-
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="phone"
-                    className="text-xs font-black text-slate-800 uppercase tracking-widest ml-1"
-                  >
-                    Telefone
-                  </label>
-                  <div className="relative group">
-                    <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-                    <input
-                      id="phone"
-                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 pl-11 pr-4 text-slate-900 font-bold placeholder:text-slate-400 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-50 transition-all outline-none"
-                      value={formatPhone(phone)}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="(00) 00000-0000"
-                    />
-                  </div>
-                </div>
               </div>
             )}
 
@@ -208,6 +176,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     className="text-xs font-bold text-blue-700 hover:text-blue-800 hover:underline transition-all"
+                    onClick={() => router.push("/forgot-password")}
                   >
                     Esqueceu a senha?
                   </button>
