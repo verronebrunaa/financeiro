@@ -14,6 +14,15 @@ import supabase from "../lib/supabaseClient";
 import { useAuth } from "./AuthProvider";
 import { useToast } from "./ToastProvider";
 
+function formatPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 11)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+}
+
 export default function SettingsManager() {
   const { user } = useAuth();
   const toast = useToast();
@@ -63,7 +72,8 @@ export default function SettingsManager() {
     setLoading(true);
 
     // Só UPDATE, não upsert
-    const { error } = await supabase.from("profiles")
+    const { error } = await supabase
+      .from("profiles")
       .update({
         full_name: profile.fullName,
         phone: profile.phone,
@@ -95,47 +105,35 @@ export default function SettingsManager() {
     setPicUploading(true);
     try {
       // Upload para Supabase Storage
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${user.id}.${fileExt}`;
       const { data, error } = await supabase.storage
-        .from('profile-pics')
+        .from("profile-pics")
         .upload(fileName, file, { upsert: true });
       if (error) throw error;
       // Recupera URL pública
       const { publicUrl } = supabase.storage
-        .from('profile-pics')
+        .from("profile-pics")
         .getPublicUrl(fileName).data;
       setProfilePic(publicUrl);
       toast.show({
-        title: 'Sucesso',
-        message: 'Foto de perfil atualizada!',
-        variant: 'success'
+        title: "Sucesso",
+        message: "Foto de perfil atualizada!",
+        variant: "success",
       });
     } catch (err: any) {
       toast.show({
-        title: 'Erro',
-        message: err?.message || 'Erro ao enviar foto.',
-        variant: 'error'
+        title: "Erro",
+        message: err?.message || "Erro ao enviar foto.",
+        variant: "error",
       });
     }
     setPicUploading(false);
   };
 
-  // Função para formatar telefone
-  function formatPhone(value: string) {
-    const digits = value.replace(/\D/g, "");
-    if (digits.length <= 2) return `(${digits}`;
-    if (digits.length <= 7)
-      return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-    if (digits.length <= 11)
-      return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
-  }
-
   return (
     <div className="max-w-4xl space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* SEÇÃO: Perfil Público */}
-      <section className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden">
+      <section className="bg-white rounded-4xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div>
             <h3 className="text-lg font-black text-slate-900 tracking-tight">
@@ -148,14 +146,24 @@ export default function SettingsManager() {
           <div className="relative group">
             <div className="w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center text-white text-2xl font-black shadow-xl overflow-hidden">
               {profilePic ? (
-                <img src={profilePic} alt="Foto de perfil" className="w-full h-full object-cover rounded-3xl" />
+                <img
+                  src={profilePic}
+                  alt="Foto de perfil"
+                  className="w-full h-full object-cover rounded-3xl"
+                />
               ) : (
                 profile.email.charAt(0).toUpperCase()
               )}
             </div>
             <label className="absolute -bottom-2 -right-2 p-2 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all active:scale-90 cursor-pointer">
               <FiCamera size={16} />
-              <input type="file" accept="image/*" className="hidden" onChange={handlePicChange} disabled={picUploading} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePicChange}
+                disabled={picUploading}
+              />
             </label>
           </div>
         </div>
@@ -197,10 +205,14 @@ export default function SettingsManager() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
+            <label
+              htmlFor="phone"
+              className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1"
+            >
               Telefone
             </label>
             <input
+              id="phone"
               type="text"
               value={profile.phone}
               onChange={(e) =>
