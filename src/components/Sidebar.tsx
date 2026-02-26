@@ -32,7 +32,7 @@ export default function Sidebar() {
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-100">
             <span className="text-white font-bold text-xl italic">$</span>
           </div>
-          <span className="font-black text-xl tracking-tighter text-slate-900 italic">Finan.</span>
+          <span className="font-black text-xl tracking-tighter text-slate-900 italic">Finnan.</span>
         </div>
         <button className="relative p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
           <FiBell size={20} />

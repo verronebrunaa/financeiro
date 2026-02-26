@@ -11,7 +11,7 @@ export default function Navbar() {
             $
           </div>
           <span className="font-black text-2xl tracking-tighter italic">
-            Finan<span className="text-blue-600">.</span>
+            Finnan<span className="text-blue-600">.</span>
           </span>
         </div>
         <div className="hidden md:flex items-center gap-8 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
