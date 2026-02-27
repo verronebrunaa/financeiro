@@ -1,77 +1,151 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   FiPieChart,
   FiTrendingUp,
   FiTrendingDown,
   FiDollarSign,
   FiFilter,
+  FiLoader,
 } from "react-icons/fi";
 import supabase from "../lib/supabaseClient";
+import { Pie } from "react-chartjs-2";
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 export default function ReportsManager() {
   const [data, setData] = useState<any[]>([]);
+  const [categoriesDb, setCategoriesDb] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
   const [filterYear, setFilterYear] = useState(new Date().getFullYear());
 
-  const loadData = async () => {
-    const { data: txs } = await supabase.from("transactions").select("*");
+  // 1. Buscar todas as categorias (Pai e Filhas) para mapeamento
+  useEffect(() => {
+    async function fetchCategories() {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, parent_id, color, type");
+      if (!error) setCategoriesDb(data || []);
+    }
+    fetchCategories();
+  }, []);
+
+  // 2. Carregar Transações com filtro seguro de fuso horário
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const { data: txs, error } = await supabase
+      .from("transactions")
+      .select("*");
 
     if (txs) {
-      // Filtrar no lado do cliente para este exemplo
       const filtered = txs.filter((tx) => {
-        const d = new Date(tx.date);
-        return (
-          d.getUTCMonth() + 1 === Number(filterMonth) &&
-          d.getUTCFullYear() === Number(filterYear)
-        );
+        // Usa due_date como verdade absoluta para competência mensal
+        const dateStr = tx.due_date || tx.competence_date;
+        if (!dateStr) return false;
+        const [year, month] = dateStr.split("-").map(Number);
+        return month === filterMonth && year === filterYear;
       });
       setData(filtered);
     }
-  };
+    setLoading(false);
+  }, [filterMonth, filterYear]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      await loadData();
-    };
-    fetchData();
-  }, [filterMonth, filterYear, loadData]);
+    loadData();
+  }, [loadData]);
 
-  // Cálculos de métricas
+  // 3. LÓGICA DE AGRUPAMENTO (Pai > Filho)
+  const gastosPorCategoria: any = {};
+
+  data
+    .filter((t) => Number(t.amount) < 0)
+    .forEach((t) => {
+      // Procura a categoria salva na transação dentro do banco de categorias
+      const cat = categoriesDb.find(
+        (c) => c.name === t.category || c.id === t.category,
+      );
+
+      if (!cat) {
+        // Fallback para caso a categoria não seja encontrada
+        const name = t.category || "Geral";
+        if (!gastosPorCategoria[name])
+          gastosPorCategoria[name] = {
+            total: 0,
+            color: "#cbd5e1",
+            subcategorias: {},
+          };
+        gastosPorCategoria[name].total += Math.abs(Number(t.amount));
+        return;
+      }
+
+      // Identifica quem é o Pai (Categoria Principal)
+      const principal = cat.parent_id
+        ? categoriesDb.find((c) => c.id === cat.parent_id)
+        : cat;
+      const principalName = principal?.name || "Geral";
+      const principalColor = principal?.color || "#3b82f6";
+
+      if (!gastosPorCategoria[principalName]) {
+        gastosPorCategoria[principalName] = {
+          total: 0,
+          color: principalColor,
+          subcategorias: {},
+        };
+      }
+
+      const valorAbsoluto = Math.abs(Number(t.amount));
+      gastosPorCategoria[principalName].total += valorAbsoluto;
+
+      // Se a categoria da transação era uma subcategoria, adiciona na lista interna
+      if (cat.parent_id) {
+        gastosPorCategoria[principalName].subcategorias[cat.name] =
+          (gastosPorCategoria[principalName].subcategorias[cat.name] || 0) +
+          valorAbsoluto;
+      }
+    });
+
+  // Métricas Globais
   const totalIncomes = data
-    .filter((t) => t.amount > 0)
+    .filter((t) => Number(t.amount) > 0)
     .reduce((acc, t) => acc + Number(t.amount), 0);
-  const totalExpenses = data
-    .filter((t) => t.amount < 0)
-    .reduce((acc, t) => acc + Math.abs(Number(t.amount)), 0);
+  const totalExpenses = Object.values(gastosPorCategoria).reduce(
+    (acc: any, c: any) => acc + c.total,
+    0,
+  );
   const balance = totalIncomes - totalExpenses;
 
-  // Agrupamento por Categoria (para o gráfico de barras/lista)
-  const categories = data
-    .filter((t) => t.amount < 0)
-    .reduce((acc: any, t) => {
-      acc[t.category] = (acc[t.category] || 0) + Math.abs(Number(t.amount));
-      return acc;
-    }, {});
+  // Configuração do Gráfico
+  const pieLabels = Object.keys(gastosPorCategoria);
+  const pieChartData = {
+    labels: pieLabels,
+    datasets: [
+      {
+        data: pieLabels.map((cat) => gastosPorCategoria[cat].total),
+        backgroundColor: pieLabels.map((cat) => gastosPorCategoria[cat].color),
+        borderWidth: 0,
+        hoverOffset: 20,
+      },
+    ],
+  };
 
-  const sortedCategories = Object.entries(categories).sort(
-    ([, a]: any, [, b]: any) => b - a,
-  );
+  if (loading)
+    return (
+      <div className="flex justify-center py-20">
+        <FiLoader className="animate-spin text-blue-600" size={40} />
+      </div>
+    );
 
   return (
-    <div className="space-y-10">
-      {/* Controles de Filtro */}
+    <div className="space-y-10 animate-in fade-in duration-500">
+      {/* Filtros */}
       <div className="flex items-center gap-4 bg-white p-4 rounded-3xl border border-slate-200 shadow-sm w-fit">
-        <div className="flex items-center gap-2 px-3 text-slate-400">
-          <FiFilter size={18} />
-          <span className="text-xs font-black uppercase tracking-widest">
-            Período:
-          </span>
-        </div>
+        <FiFilter className="ml-2 text-slate-400" />
         <select
           value={filterMonth}
           onChange={(e) => setFilterMonth(Number(e.target.value))}
-          className="bg-slate-50 border-none rounded-xl py-2 px-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
+          className="bg-slate-50 rounded-xl py-2 px-4 font-bold outline-none"
         >
           {Array.from({ length: 12 }).map((_, i) => (
             <option key={i + 1} value={i + 1}>
@@ -82,9 +156,9 @@ export default function ReportsManager() {
         <select
           value={filterYear}
           onChange={(e) => setFilterYear(Number(e.target.value))}
-          className="bg-slate-50 border-none rounded-xl py-2 px-4 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
+          className="bg-slate-50 rounded-xl py-2 px-4 font-bold outline-none"
         >
-          {[2024, 2025, 2026].map((y) => (
+          {[2024, 2025, 2026, 2027].map((y) => (
             <option key={y} value={y}>
               {y}
             </option>
@@ -92,100 +166,120 @@ export default function ReportsManager() {
         </select>
       </div>
 
-      {/* Cards de Resumo de Alto Impacto */}
+      {/* Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <ReportCard
-          title="Entradas"
+          title="Receitas"
           value={totalIncomes}
-          icon={<FiTrendingUp />}
           color="text-emerald-600"
           bg="bg-emerald-50"
+          icon={<FiTrendingUp />}
         />
         <ReportCard
-          title="Saídas"
+          title="Despesas"
           value={totalExpenses}
-          icon={<FiTrendingDown />}
           color="text-red-600"
           bg="bg-red-50"
+          icon={<FiTrendingDown />}
         />
         <ReportCard
-          title="Saldo Final"
+          title="Saldo"
           value={balance}
-          icon={<FiDollarSign />}
           color="text-blue-600"
           bg="bg-blue-50"
+          icon={<FiDollarSign />}
         />
       </div>
 
-      {/* Distribuição por Categoria */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <section className="bg-white p-8 rounded-4xl border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2">
-              <FiPieChart className="text-blue-600" /> Gastos por Categoria
-            </h3>
-            <span className="text-[10px] font-bold text-slate-400">
-              TOTAL EM SAÍDAS
-            </span>
-          </div>
+        {/* Gráfico e Lista Detalhada */}
+        <section className="bg-white p-10 rounded-[40px] border border-slate-200 shadow-sm">
+          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-10 flex items-center gap-2">
+            <FiPieChart className="text-blue-600" /> Distribuição de Gastos
+          </h3>
 
-          <div className="space-y-6">
-            {sortedCategories.length > 0 ? (
-              sortedCategories.map(([cat, val]: any) => {
-                const percentage = ((val / totalExpenses) * 100).toFixed(1);
-                return (
-                  <div key={cat} className="space-y-2">
-                    <div className="flex justify-between items-end">
-                      <span className="text-sm font-black text-slate-700">
-                        {cat}
-                      </span>
-                      <span className="text-sm font-black text-slate-900">
-                        {val.toLocaleString("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        })}
-                      </span>
+          <div className="flex flex-col items-center">
+            {pieLabels.length > 0 ? (
+              <>
+                <div className="w-full max-w-[300px] mb-12">
+                  <Pie
+                    data={pieChartData}
+                    options={{ plugins: { legend: { display: false } } }}
+                  />
+                </div>
+                <div className="w-full space-y-6">
+                  {pieLabels.map((cat) => (
+                    <div key={cat} className="group">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{
+                              backgroundColor: gastosPorCategoria[cat].color,
+                            }}
+                          />
+                          <span className="font-black text-slate-700">
+                            {cat}
+                          </span>
+                        </div>
+                        <span className="font-black text-slate-900">
+                          {gastosPorCategoria[cat].total.toLocaleString(
+                            "pt-BR",
+                            { style: "currency", currency: "BRL" },
+                          )}
+                        </span>
+                      </div>
+                      {/* Subcategorias lógicas ↳ */}
+                      {Object.entries(
+                        gastosPorCategoria[cat].subcategorias,
+                      ).map(([sub, val]: any) => (
+                        <div
+                          key={sub}
+                          className="ml-6 flex justify-between text-xs font-bold text-slate-400 mb-1 italic"
+                        >
+                          <span>↳ {sub}</span>
+                          <span>
+                            {val.toLocaleString("pt-BR", {
+                              style: "currency",
+                              currency: "BRL",
+                            })}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-blue-600 rounded-full transition-all duration-1000"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                    <p className="text-[10px] font-bold text-slate-400 text-right">
-                      {percentage}% do total de gastos
-                    </p>
-                  </div>
-                );
-              })
+                  ))}
+                </div>
+              </>
             ) : (
-              <p className="text-center py-10 text-slate-400 font-medium italic text-sm">
-                Nenhum gasto registrado no período.
+              <p className="py-20 text-slate-400 italic">
+                Sem movimentações este mês.
               </p>
             )}
           </div>
         </section>
 
-        {/* Card Informativo de Destaque */}
-        <section className="bg-slate-900 p-8 rounded-4xl text-white flex flex-col justify-between overflow-hidden relative group">
-          <FiDollarSign className="absolute -right-10 -top-10 text-white/5 w-64 h-64 rotate-12 group-hover:scale-110 transition-transform" />
-          <div className="relative z-10">
-            <h3 className="text-blue-400 text-xs font-black uppercase tracking-widest mb-2">
-              Insight do Mês
-            </h3>
-            <p className="text-xl font-bold leading-tight">
-              {balance >= 0
-                ? "Parabéns! Você está operando no azul este mês. Considere investir o excedente."
-                : "Atenção: Suas despesas superaram suas receitas. Revise seus gastos em categorias não essenciais."}
-            </p>
-          </div>
-          <div className="relative z-10 mt-10">
-            <p className="text-slate-400 text-xs font-bold uppercase mb-1">
-              Maior Gasto em:
-            </p>
-            <p className="text-2xl font-black">
-              {sortedCategories[0]?.[0] || "—"}
-            </p>
+        {/* Insight e Destaque */}
+        <section className="space-y-8">
+          <div className="bg-slate-900 p-10 rounded-[40px] text-white relative overflow-hidden h-full flex flex-col justify-between">
+            <FiDollarSign className="absolute -right-10 -top-10 text-white/5 w-64 h-64 rotate-12" />
+            <div className="relative z-10">
+              <h4 className="text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
+                Finnan Intelligence
+              </h4>
+              <p className="text-2xl font-bold leading-tight tracking-tighter italic">
+                {balance < 0
+                  ? "Atenção! Suas despesas ultrapassaram suas receitas. Revise seus custos fixos."
+                  : "Ótimo trabalho! Você manteve seu orçamento sob controle este mês."}
+              </p>
+            </div>
+            <div className="relative z-10 mt-20 pt-8 border-t border-white/10">
+              <p className="text-slate-500 text-[10px] font-black uppercase mb-1">
+                Maior Categoria de Gasto
+              </p>
+              <p className="text-3xl font-black text-blue-500">
+                {pieLabels.length > 0 ? pieLabels[0] : "—"}
+              </p>
+            </div>
           </div>
         </section>
       </div>
@@ -193,12 +287,11 @@ export default function ReportsManager() {
   );
 }
 
-// Sub-componente de Card
 function ReportCard({ title, value, icon, color, bg }: any) {
   return (
-    <div className="bg-white p-6 rounded-4xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+    <div className="bg-white p-8 rounded-[40px] border border-slate-200 shadow-sm">
       <div
-        className={`w-12 h-12 ${bg} ${color} rounded-2xl flex items-center justify-center mb-6 text-2xl`}
+        className={`w-12 h-12 ${bg} ${color} rounded-2xl flex items-center justify-center mb-6 text-xl shadow-inner`}
       >
         {icon}
       </div>

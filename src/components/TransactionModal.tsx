@@ -122,11 +122,23 @@ export default function TransactionModal({
     fetchCategories();
   }, []);
 
-  // Filtra categorias e subcategorias pelo tipo selecionado (Receita ou Despesa)
+  // Filtra categorias principais e subcategorias pelo tipo selecionado (Receita ou Despesa)
   const typeMap = { entrada: "receita", saida: "despesa" };
-  const filteredCategories = categories.filter(
-    (c) => c.type === typeMap[formData.type],
+  const categoriasPrincipais = categories.filter(
+    (c) => c.type === typeMap[formData.type] && c.parent_id === null,
   );
+  const categoriaSelecionada = categoriasPrincipais.find(
+    (c) => c.id === formData.category,
+  );
+  const subcategorias = categoriaSelecionada
+    ? categories.filter(
+        (c) => c.parent_id === categoriaSelecionada.id,
+      )
+    : [];
+  // Adiciona campo subcategory ao formData
+  if (!formData.hasOwnProperty('subcategory')) {
+    formData.subcategory = "";
+  }
 
   const resetForm = () => {
     setFormData(initialState);
@@ -371,17 +383,17 @@ export default function TransactionModal({
                       className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 px-4 font-bold text-slate-900 focus:border-blue-600 outline-none transition-all appearance-none cursor-pointer"
                       value={formData.category}
                       onChange={(e) =>
-                        setFormData({ ...formData, category: e.target.value })
+                        setFormData({ ...formData, category: e.target.value, subcategory: "" })
                       }
                     >
                       <option value="">
                         {loadingCats
                           ? "Carregando..."
-                          : "Selecione uma categoria"}
+                          : "Selecione a categoria principal"}
                       </option>
-                      {filteredCategories.map((cat) => (
-                        <option key={cat.id} value={cat.name}>
-                          {cat.parent_id ? `↳ ${cat.name}` : cat.name}
+                      {categoriasPrincipais.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
                         </option>
                       ))}
                     </select>
@@ -394,6 +406,32 @@ export default function TransactionModal({
                     </div>
                   </div>
                 </div>
+                {subcategorias.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                      Subcategoria
+                    </label>
+                    <div className="relative">
+                      <select
+                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 px-4 font-bold text-slate-900 focus:border-blue-600 outline-none transition-all appearance-none cursor-pointer"
+                        value={formData.subcategory || ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, subcategory: e.target.value })
+                        }
+                      >
+                        <option value="">Selecione a subcategoria</option>
+                        {subcategorias.map((sub) => (
+                          <option key={sub.id} value={sub.id}>
+                            {sub.name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <FiChevronDown className="text-slate-400" />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {/* Payment Method */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">

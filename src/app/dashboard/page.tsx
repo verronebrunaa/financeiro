@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Sidebar from "../../components/Sidebar";
 import TransactionCard from "../../components/TransactionCard";
 import supabase from "../../lib/supabaseClient";
@@ -13,82 +13,76 @@ import {
 import { SummaryCard } from "@/components/SummaryCard";
 
 type Tx = {
-  due_date: string;
   id: string;
-  date?: string;
   description: string;
   amount: number;
   category?: string;
-  metadata?: any;
+  due_date: string;
+  competence_date: string;
+  status?: string;
+  type: "entrada" | "saida";
 };
 
 export default function DashboardPage() {
   const [txs, setTxs] = useState<Tx[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Pega a data de hoje no formato YYYY-MM-DD para comparações seguras
+  const todayStr = new Date().toLocaleDateString('en-CA'); 
 
   useEffect(() => {
     let isMounted = true;
 
     async function load() {
       try {
+        setLoading(true);
         const { data, error } = await supabase
           .from("transactions")
           .select("*")
-          .order("date", { ascending: false })
+          .order("due_date", { ascending: false })
           .limit(100);
+        
         if (error) throw error;
-        if (!isMounted) return;
-        setTxs((data as any) || []);
+        if (isMounted) setTxs((data as Tx[]) || []);
       } catch (err) {
         console.error("Erro ao carregar transações:", err);
+      } finally {
+        if (isMounted) setLoading(false);
       }
     }
 
     load();
 
-    // realtime listener for transactions
     const channel = supabase
       .channel("public:transactions")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "transactions" },
         (payload) => {
-          // Use correct property for each event type
-          setTxs((prev) => {
-            if (payload.eventType === "INSERT") {
-              const rec = (payload as any).new;
-              return [rec, ...prev];
-            }
-            if (payload.eventType === "UPDATE") {
-              const rec = (payload as any).new;
-              return prev.map((p) => (p.id === rec.id ? rec : p));
-            }
-            if (payload.eventType === "DELETE") {
-              const rec = (payload as any).old;
-              return prev.filter((p) => p.id !== rec.id);
-            }
-            return prev;
-          });
-        },
+          if (payload.eventType === "INSERT") {
+            const rec = payload.new as Tx;
+            setTxs((prev) => [rec, ...prev]);
+          }
+          if (payload.eventType === "UPDATE") {
+            const rec = payload.new as Tx;
+            setTxs((prev) => prev.map((p) => (p.id === rec.id ? rec : p)));
+          }
+          if (payload.eventType === "DELETE") {
+            const rec = payload.old as Tx;
+            setTxs((prev) => prev.filter((p) => p.id !== rec.id));
+          }
+        }
       )
       .subscribe();
 
     return () => {
       isMounted = false;
-      try {
-        channel.unsubscribe();
-      } catch (e) {}
+      channel.unsubscribe();
     };
   }, []);
 
-  function handleFile(f: File) {
-    console.log("Arquivo recebido:", f.name);
-  }
-
-  // compute summaries from transactions
-  const summaries = React.useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+  const summaries = useMemo(() => {
+    const currentYearMonth = todayStr.substring(0, 7); // "YYYY-MM"
 
     let debts = 0;
     let monthlyExpenses = 0;
@@ -97,185 +91,136 @@ export default function DashboardPage() {
 
     txs.forEach((t) => {
       const amt = Number(t.amount) || 0;
-      const date = t.date ? new Date(t.date) : null;
+      const txMonth = t.due_date?.substring(0, 7);
+      const isPaid = t.status === "Pago";
 
-      // debts: categoria 'Divida' ou negative amounts older than 30 days (fallback)
-      if (
-        t.category === "Divida" ||
-        (amt < 0 &&
-          date &&
-          (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24) > 30)
-      ) {
-        debts += amt;
+      // 1. Dívidas: Apenas se a categoria for 'Divida' (Valor absoluto para o card)
+      if (t.category === "Divida") {
+        debts += Math.abs(amt);
       }
 
-      // overdue detection: prefer explicit due_date / paid flag in metadata
-      try {
-        const meta = (t as any).metadata;
-        const paid = meta?.paid;
-        const dueStr = meta?.due_date;
-        const dueDate = dueStr ? new Date(dueStr) : null;
-        if (amt < 0) {
-          if (dueDate && dueDate.getTime() < Date.now() && !paid) {
-            overdue += amt;
-          } else if (!dueDate) {
-            // fallback: consider older than 30 days as overdue
-            if (date) {
-              const ageDays =
-                (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24);
-              if (ageDays > 30) overdue += amt;
-            }
-          }
-        }
-      } catch (e) {}
+      // 2. Em Atraso: Se a data de vencimento for menor que hoje E não estiver pago
+      if (t.due_date && t.due_date < todayStr && !isPaid && amt < 0) {
+        overdue += Math.abs(amt);
+      }
 
-      // monthly expenses and receipts (current month)
-      if (
-        date &&
-        date.getMonth() === currentMonth &&
-        date.getFullYear() === currentYear
-      ) {
-        if (amt < 0) monthlyExpenses += amt;
-        else receipts += amt;
+      // 3. Métricas do Mês Atual (Baseado no vencimento)
+      if (txMonth === currentYearMonth) {
+        if (amt < 0) {
+          monthlyExpenses += Math.abs(amt);
+        } else {
+          receipts += amt;
+        }
       }
     });
 
-    return {
-      debts: Math.abs(debts),
-      monthlyExpenses: Math.abs(monthlyExpenses),
-      receipts: receipts,
-      overdue: Math.abs(overdue),
-    };
-  }, [txs]);
+    return { debts, monthlyExpenses, receipts, overdue };
+  }, [txs, todayStr]);
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
       <Sidebar />
       <main className="flex-1 overflow-y-auto p-12 custom-scrollbar">
         <div className="max-w-6xl mx-auto">
-          <header className="mb-12">
+          <header className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
             <h1 className="text-4xl font-black text-slate-900 tracking-tighter italic">
               Dashboard<span className="text-blue-600">.</span>
             </h1>
             <p className="text-slate-500 font-bold mt-2 text-lg">
-              Bem-vindo ao seu controle financeiro.
+              Resumo do seu patrimônio em tempo real.
             </p>
           </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-4 gap-4">
-              <SummaryCard
-                title="Dívidas"
-                value={new Intl.NumberFormat("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                }).format(summaries.debts)}
-                icon={<FiTrendingDown />}
-                color="text-red-600"
-                bg="bg-red-50"
-              />
-              <SummaryCard
-                title="Gastos Mensais"
-                value={new Intl.NumberFormat("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                }).format(summaries.monthlyExpenses)}
-                icon={<FiDollarSign />}
-                color="text-blue-600"
-                bg="bg-blue-50"
-              />
-              <SummaryCard
-                title="Recebimentos"
-                value={new Intl.NumberFormat("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                }).format(summaries.receipts)}
-                icon={<FiTrendingUp />}
-                color="text-emerald-600"
-                bg="bg-emerald-50"
-              />
-              <SummaryCard
-                title="Em Atraso"
-                value={new Intl.NumberFormat("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                }).format(summaries.overdue)}
-                icon={<FiAlertCircle />}
-                color="text-amber-600"
-                bg="bg-amber-50"
-              />
-            </div>
+          {/* Grid de SummaryCards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+            <SummaryCard
+              title="Total em Dívidas"
+              value={new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(summaries.debts)}
+              icon={<FiTrendingDown />}
+              color="text-red-600"
+              bg="bg-red-50"
+            />
+            <SummaryCard
+              title="Gastos do Mês"
+              value={new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(summaries.monthlyExpenses)}
+              icon={<FiDollarSign />}
+              color="text-blue-600"
+              bg="bg-blue-50"
+            />
+            <SummaryCard
+              title="Recebimentos"
+              value={new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(summaries.receipts)}
+              icon={<FiTrendingUp />}
+              color="text-emerald-600"
+              bg="bg-emerald-50"
+            />
+            <SummaryCard
+              title="Total em Atraso"
+              value={new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(summaries.overdue)}
+              icon={<FiAlertCircle />}
+              color="text-amber-600"
+              bg="bg-amber-50"
+            />
           </div>
 
-          <section className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-              <h3 className="text-lg font-black text-slate-900 uppercase tracking-wider">
-                Últimas transações
+          <section className="bg-white rounded-[40px] border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="text-lg font-black text-slate-900 uppercase tracking-widest italic">
+                Fluxo de Caixa Rápido
               </h3>
               <button
-                className="text-blue-600 font-bold text-sm hover:underline"
-                onClick={() =>
-                  (window.location.href = "/dashboard/transactions")
-                }
+                className="px-6 py-2 bg-slate-900 text-white text-xs font-black rounded-xl hover:bg-slate-800 transition-all uppercase tracking-widest"
+                onClick={() => (globalThis.location.href = "/dashboard/transactions")}
               >
-                Ver todas
+                Histórico Completo
               </button>
             </div>
 
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Recentes */}
+            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-12">
+              {/* Coluna 1: Recentes (Últimos lançamentos) */}
               <div>
-                <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">
-                  Recentes
+                <h4 className="text-[10px] font-black text-slate-400 uppercase mb-6 tracking-[0.2em] ml-1">
+                  Últimos Lançamentos
                 </h4>
-                {txs.length === 0 ? (
-                  <div className="py-10 text-center">
-                    <div className="bg-slate-50 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <FiDollarSign className="text-slate-300" size={24} />
-                    </div>
-                    <p className="text-slate-500 font-medium text-sm">
-                      Nenhuma transação encontrada.
-                    </p>
-                  </div>
-                ) : (
-                  txs
-                    .slice(0, 3)
-                    .map((t) => <TransactionCard key={t.id} t={t} />)
-                )}
+                <div className="space-y-4">
+                  {txs.length === 0 ? (
+                    <EmptyState />
+                  ) : (
+                    txs.slice(0, 4).map((t) => <TransactionCard key={t.id} t={t} />)
+                  )}
+                </div>
               </div>
 
-              {/* Próximas a vencer/receber */}
+              {/* Coluna 2: Futuro (Próximos vencimentos) */}
               <div>
-                <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">
-                  Próximas a vencer/receber
+                <h4 className="text-[10px] font-black text-blue-600 uppercase mb-6 tracking-[0.2em] ml-1">
+                  Próximos Compromissos
                 </h4>
-                {txs.length === 0 ? (
-                  <div className="py-10 text-center">
-                    <div className="bg-slate-50 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2">
-                      <FiDollarSign className="text-slate-300" size={24} />
-                    </div>
-                    <p className="text-slate-500 font-medium text-sm">
-                      Nenhuma transação encontrada.
-                    </p>
-                  </div>
-                ) : (
-                  txs
-                    .filter(
-                      (t) => t.due_date && new Date(t.due_date) > new Date(),
-                    )
-                    .sort(
-                      (a, b) =>
-                        new Date(a.due_date!).getTime() -
-                        new Date(b.due_date!).getTime(),
-                    )
-                    .slice(0, 3)
-                    .map((t) => <TransactionCard key={t.id} t={t} />)
-                )}
+                <div className="space-y-4">
+                  {txs.filter(t => t.due_date >= todayStr && t.status !== "Pago").length === 0 ? (
+                    <EmptyState message="Tudo em dia por aqui!" />
+                  ) : (
+                    txs
+                      .filter(t => t.due_date >= todayStr && t.status !== "Pago")
+                      .sort((a, b) => a.due_date.localeCompare(b.due_date))
+                      .slice(0, 4)
+                      .map((t) => <TransactionCard key={t.id} t={t} />)
+                  )}
+                </div>
               </div>
             </div>
           </section>
         </div>
       </main>
+    </div>
+  );
+}
+
+function EmptyState({ message = "Nenhuma transação encontrada." }) {
+  return (
+    <div className="py-10 text-center bg-slate-50/50 rounded-4xl border-2 border-dashed border-slate-100">
+      <FiDollarSign className="text-slate-200 mx-auto mb-2" size={32} />
+      <p className="text-slate-400 font-bold text-sm uppercase tracking-widest italic">{message}</p>
     </div>
   );
 }
