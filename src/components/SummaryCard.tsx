@@ -16,7 +16,7 @@ export function SummaryCard({
   icon,
   color,
   bg,
-}: SummaryCardProps) {
+}: Readonly<SummaryCardProps>) {
   return (
     <div className="group relative bg-white p-6 rounded-4xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 ease-in-out hover:-translate-y-1 overflow-hidden">
       <div

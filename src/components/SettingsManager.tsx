@@ -37,7 +37,6 @@ export default function SettingsManager() {
     email: "",
   });
 
-  // Preenche dados ao abrir respeitando LGPD
   useEffect(() => {
     if (!user?.id) return;
     async function fetchProfile() {
@@ -67,11 +66,10 @@ export default function SettingsManager() {
 
   const handleSave = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user?.id) return; // Garante que o ID do Auth existe
+    if (!user?.id) return;
 
     setLoading(true);
 
-    // Só UPDATE, não upsert
     const { error } = await supabase
       .from("profiles")
       .update({
