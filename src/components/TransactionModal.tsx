@@ -238,10 +238,10 @@ export default function TransactionModal({
 
     const { error } = await supabase.from("transactions").insert(inserts);
 
-    if (!error) {
-      setShowConfirmation(true);
-    } else {
+    if (error) {
       toast.error("Erro ao salvar: " + error.message);
+    } else {
+      setShowConfirmation(true);
     }
     setLoading(false);
   };
@@ -393,6 +393,52 @@ export default function TransactionModal({
                       )}
                     </div>
                   </div>
+                </div>
+                {/* Payment Method */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                    Forma de Pagamento
+                  </label>
+                  <div className="relative">
+                    <select
+                      required
+                      className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 px-4 font-bold text-slate-900 focus:border-blue-600 outline-none transition-all appearance-none cursor-pointer"
+                      value={formData.payment_method}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          payment_method: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="Dinheiro">Dinheiro</option>
+                      <option value="Cartão de Crédito">
+                        Cartão de Crédito
+                      </option>
+                      <option value="Cartão de Débito">Cartão de Débito</option>
+                      <option value="Pix">Pix</option>
+                      <option value="Boleto">Boleto</option>
+                      <option value="Outros">Outros</option>
+                    </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <FiChevronDown className="text-slate-400" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                    Observação
+                  </label>
+                  <textarea
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 px-4 font-bold text-slate-900 focus:border-blue-600 outline-none transition-all min-h-15"
+                    placeholder="Observações sobre a transação"
+                    value={formData.observation}
+                    onChange={(e) =>
+                      setFormData({ ...formData, observation: e.target.value })
+                    }
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

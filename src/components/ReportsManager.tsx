@@ -31,8 +31,11 @@ export default function ReportsManager() {
   };
 
   useEffect(() => {
-    loadData();
-  }, [filterMonth, filterYear]);
+    const fetchData = async () => {
+      await loadData();
+    };
+    fetchData();
+  }, [filterMonth, filterYear, loadData]);
 
   // Cálculos de métricas
   const totalIncomes = data
@@ -116,7 +119,7 @@ export default function ReportsManager() {
 
       {/* Distribuição por Categoria */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <section className="bg-white p-8 rounded-[32px] border border-slate-200 shadow-sm">
+        <section className="bg-white p-8 rounded-4xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2">
               <FiPieChart className="text-blue-600" /> Gastos por Categoria
@@ -164,7 +167,7 @@ export default function ReportsManager() {
         </section>
 
         {/* Card Informativo de Destaque */}
-        <section className="bg-slate-900 p-8 rounded-[32px] text-white flex flex-col justify-between overflow-hidden relative group">
+        <section className="bg-slate-900 p-8 rounded-4xl text-white flex flex-col justify-between overflow-hidden relative group">
           <FiDollarSign className="absolute -right-10 -top-10 text-white/5 w-64 h-64 rotate-12 group-hover:scale-110 transition-transform" />
           <div className="relative z-10">
             <h3 className="text-blue-400 text-xs font-black uppercase tracking-widest mb-2">
