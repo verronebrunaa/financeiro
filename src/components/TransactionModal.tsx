@@ -24,8 +24,10 @@ export type Transaction = {
   is_monthly: boolean;
   category: string;
   payment_method: string;
-  user_id?: string;
+  subcategory?: string;
   status?: string;
+  payment_date?: string;
+  user_id?: string;
   recurrence_group_id?: string;
   installment_number?: number;
   total_installments?: number;
@@ -85,6 +87,9 @@ export default function TransactionModal({
     is_monthly: false,
     category: "",
     payment_method: "",
+    subcategory: "",
+    status: "pending",
+    payment_date: todayLocal,
   };
 
   const [formData, setFormData] = useState(
@@ -99,7 +104,6 @@ export default function TransactionModal({
       : initialState,
   );
 
-  // --- BUSCA DINÂMICA DAS CATEGORIAS DO BANCO ---
   useEffect(() => {
     async function fetchCategories() {
       try {

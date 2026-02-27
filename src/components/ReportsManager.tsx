@@ -111,8 +111,8 @@ export default function ReportsManager() {
     .filter((t) => Number(t.amount) > 0)
     .reduce((acc, t) => acc + Number(t.amount), 0);
   const totalExpenses = Object.values(gastosPorCategoria).reduce(
-    (acc: any, c: any) => acc + c.total,
-    0,
+    (acc: number, c: any) => acc + c.total,
+    0 as number,
   );
   const balance = totalIncomes - totalExpenses;
 
