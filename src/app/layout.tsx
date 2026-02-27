@@ -16,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Finnan - App de Controle Financeiro",
-  description: "Finnan é um aplicativo de controle financeiro pessoal que ajuda você a organizar suas finanças, acompanhar gastos e economizar dinheiro de forma fácil e intuitiva.",
+  description:
+    "Finnan é um aplicativo de controle financeiro pessoal que ajuda você a organizar suas finanças, acompanhar gastos e economizar dinheiro de forma fácil e intuitiva.",
 };
 
 export default function RootLayout({
