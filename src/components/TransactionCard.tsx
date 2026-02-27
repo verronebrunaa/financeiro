@@ -8,7 +8,6 @@ import {
   FiShoppingBag,
   FiCoffee,
   FiTruck,
-  FiHelpCircle,
 } from "react-icons/fi";
 
 type Transaction = {
