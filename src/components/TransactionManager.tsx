@@ -124,7 +124,7 @@ export default function TransactionManager() {
       </div>
 
       {/* Tabela */}
-      <div className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-4xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50/50 border-b border-slate-100">
@@ -164,7 +164,7 @@ export default function TransactionManager() {
                         {statusLabel}
                       </span>
                     </td>
-                    <td className="p-5 max-w-[200px] truncate">
+                    <td className="p-5 max-w-50 truncate">
                       <div className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${Number(tx.amount) < 0 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"}`}>
                           {Number(tx.amount) < 0 ? <FiArrowDownLeft /> : <FiArrowUpRight />}

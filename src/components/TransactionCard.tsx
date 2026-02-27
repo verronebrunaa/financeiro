@@ -18,7 +18,6 @@ type Transaction = {
   category?: string;
 };
 
-// Helper para ícones baseados em categoria (extensível)
 const getCategoryIcon = (category?: string) => {
   const c = category?.toLowerCase() || "";
   if (c.includes("comida") || c.includes("restaurante")) return <FiCoffee />;
@@ -27,13 +26,12 @@ const getCategoryIcon = (category?: string) => {
   return <FiTag />;
 };
 
-export default function TransactionCard({ t }: { t: Transaction }) {
+export default function TransactionCard({ t }: Readonly<{ t: Transaction }>) {
   const isNegative = t.amount < 0;
 
   return (
     <div className="group flex items-center justify-between p-4 bg-white hover:bg-slate-50 border border-slate-100 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md">
       <div className="flex items-center gap-4">
-        {/* Ícone de Categoria com Indicador de Fluxo */}
         <div
           className={`
           relative flex items-center justify-center w-12 h-12 rounded-xl text-lg transition-colors
@@ -46,7 +44,6 @@ export default function TransactionCard({ t }: { t: Transaction }) {
         >
           {getCategoryIcon(t.category)}
 
-          {/* Mini Badge de Direção */}
           <span
             className={`
             absolute -top-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center text-[10px]
@@ -57,7 +54,6 @@ export default function TransactionCard({ t }: { t: Transaction }) {
           </span>
         </div>
 
-        {/* Info da Transação */}
         <div className="flex flex-col">
           <span className="font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">
             {t.description}

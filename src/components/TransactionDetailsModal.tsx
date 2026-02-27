@@ -130,6 +130,14 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
               />
             </div>
 
+            {transaction.payment_date && (
+              <DetailItem
+                icon={<FiCalendar className="text-green-500" />}
+                label={transaction.type === "entrada" ? "Recebido em" : "Pago em"}
+                value={new Date(transaction.payment_date).toLocaleDateString("pt-BR")}
+              />
+            )}
+
             {/* Flags */}
             <div className="flex gap-2 pt-2">
               {transaction.is_monthly && (
