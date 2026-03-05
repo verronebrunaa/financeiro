@@ -133,8 +133,12 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
             {transaction.payment_date && (
               <DetailItem
                 icon={<FiCalendar className="text-green-500" />}
-                label={transaction.type === "entrada" ? "Recebido em" : "Pago em"}
-                value={new Date(transaction.payment_date).toLocaleDateString("pt-BR")}
+                label={
+                  transaction.type === "entrada" ? "Recebido em" : "Pago em"
+                }
+                value={new Date(transaction.payment_date).toLocaleDateString(
+                  "pt-BR",
+                )}
               />
             )}
 
@@ -143,11 +147,6 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
               {transaction.is_monthly && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase">
                   <FiRepeat size={14} /> Mensal
-                </div>
-              )}
-              {transaction.has_interest && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase">
-                  <FiPercent size={14} /> Juros
                 </div>
               )}
             </div>

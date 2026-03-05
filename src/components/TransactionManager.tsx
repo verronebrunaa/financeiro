@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import {
   FiPlus,
@@ -20,9 +21,21 @@ const formatSafeDate = (dateStr: string | undefined) => {
   return `${day}/${month}/${year}`;
 };
 
+// Função para gerar cor pastel aleatória
+function getRandomColor(id: string) {
+  // Gera cor baseada no id para ser estável
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const h = Math.abs(hash) % 360;
+  return `hsl(${h}, 70%, 85%)`;
+}
+
 export default function TransactionManager() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [sortField, setSortField] = useState<string>("competence_date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [filterMonth, setFilterMonth] = useState<string>("");
@@ -45,6 +58,12 @@ export default function TransactionManager() {
 
   useEffect(() => {
     loadTransactions();
+    // Busca categorias do backend
+    const loadCategories = async () => {
+      const { data } = await supabase.from("categories").select("id, name");
+      setCategories(data || []);
+    };
+    loadCategories();
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -146,11 +165,22 @@ export default function TransactionManager() {
             onChange={(e) => setFilterYear(e.target.value)}
           >
             <option value="">Ano</option>
-            {[2024, 2025, 2026, 2027].map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
+            {[
+              ...new Set(
+                transactions
+                  .map((tx) => {
+                    const dateStr = tx.due_date || tx.competence_date;
+                    return dateStr ? Number(dateStr.split("-")[0]) : null;
+                  })
+                  .filter(Boolean),
+              ),
+            ]
+              .sort((a, b) => a - b)
+              .map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
           </select>
         </div>
       </div>
@@ -161,11 +191,43 @@ export default function TransactionManager() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50/50 border-b border-slate-100">
               <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
-                <th className="p-5">Data</th>
-                <th className="p-5">Vencimento</th>
+                {SortHeader({
+                  label: "Data de Competência",
+                  field: "competence_date",
+                  currentField: sortField,
+                  direction: sortDirection,
+                  onSort: handleSort,
+                })}
+                {SortHeader({
+                  label: "Data de Vencimento",
+                  field: "due_date",
+                  currentField: sortField,
+                  direction: sortDirection,
+                  onSort: handleSort,
+                })}
                 <th className="p-5">Status</th>
-                <th className="p-5">Descrição</th>
-                <th className="p-5 text-right px-8">Valor</th>
+                {SortHeader({
+                  label: "Descrição",
+                  field: "description",
+                  currentField: sortField,
+                  direction: sortDirection,
+                  onSort: handleSort,
+                })}
+                {SortHeader({
+                  label: "Categoria",
+                  field: "category",
+                  currentField: sortField,
+                  direction: sortDirection,
+                  onSort: handleSort,
+                })}
+                {SortHeader({
+                  label: "Valor",
+                  field: "amount",
+                  currentField: sortField,
+                  direction: sortDirection,
+                  onSort: handleSort,
+                  className: "text-right px-8",
+                })}
               </tr>
             </thead>
             <tbody className="text-sm font-bold text-slate-900">
@@ -224,6 +286,31 @@ export default function TransactionManager() {
                           />
                         )}
                       </div>
+                    </td>
+                    <td className="p-5">
+                      {(() => {
+                        if (!tx.category) return "—";
+                        const found = categories.find(
+                          (cat) => cat.id === tx.category
+                        );
+                        const color = found ? (found.color || getRandomColor(found?.id || tx.category)) : getRandomColor(tx.category);
+                        const name = found ? found.name : tx.category;
+                        return (
+                          <span
+                            className="px-3 py-1 rounded-full text-xs font-bold"
+                            style={{
+                              backgroundColor: color,
+                              color: "#334155",
+                              border: "none",
+                              display: "inline-block",
+                              minWidth: "60px",
+                              textAlign: "center",
+                            }}
+                          >
+                            {name}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td
                       className={`p-5 text-right px-8 font-black text-base tracking-tighter ${Number(tx.amount) < 0 ? "text-slate-900" : "text-emerald-600"}`}

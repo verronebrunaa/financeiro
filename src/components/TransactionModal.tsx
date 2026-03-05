@@ -19,7 +19,6 @@ export type Transaction = {
   type: "entrada" | "saida";
   competence_date: string;
   due_date: string;
-  has_interest: boolean;
   observation: string;
   is_monthly: boolean;
   category: string;
@@ -82,7 +81,6 @@ export default function TransactionModal({
     type: "saida" as "entrada" | "saida",
     competence_date: todayLocal,
     due_date: todayLocal,
-    has_interest: false,
     observation: "",
     is_monthly: false,
     category: "",
@@ -175,7 +173,6 @@ export default function TransactionModal({
         due_date: formData.due_date,
         category: formData.category,
         payment_method: formData.payment_method,
-        has_interest: formData.has_interest,
         observation: formData.observation,
         type: formData.type,
         user_id: user?.id,
@@ -240,7 +237,6 @@ export default function TransactionModal({
         due_date: nextDue,
         category: formData.category,
         payment_method: formData.payment_method,
-        has_interest: formData.has_interest,
         observation: formData.observation,
         is_monthly: recurrenceType !== "none",
         type: formData.type,
