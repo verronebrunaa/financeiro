@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Papa from "papaparse";
 import {
   FiFileText,
   FiDownload,
@@ -38,24 +39,24 @@ export default function ImportManager() {
   }
 
   const handleFileUploaded = (file: File) => {
-    // Aqui entrará o seu parser real futuramente
-    const mockExtracted: PendingTx[] = [
-      {
-        id: "1",
-        date: "2026-02-25",
-        description: "Supermercado Exemplo",
-        amount: -250.0,
-        category: "Alimentação",
-      },
-      {
-        id: "2",
-        date: "2026-02-24",
-        description: "Transferência Recebida",
-        amount: 1200.0,
-        category: "Renda",
-      },
-    ];
-    setPendingData(mockExtracted);
+    if (file.type === "text/csv" || file.name.endsWith(".csv")) {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          const parsed: PendingTx[] = results.data.map((row: any, idx: number) => ({
+            id: String(idx + 1),
+            date: row.date || row.data || "",
+            description: row.description || row.descricao || "",
+            amount: Number(row.amount || row.valor || 0),
+            category: row.category || row.categoria || "",
+          }));
+          setPendingData(parsed);
+        },
+      });
+    } else {
+      alert("Formato de arquivo não suportado. Use CSV.");
+    }
   };
 
   const saveImport = async () => {
@@ -144,24 +145,40 @@ export default function ImportManager() {
                         <td className="p-4">
                           <input
                             type="date"
-                            defaultValue={tx.date}
+                            value={tx.date}
+                            onChange={e => {
+                              const newData = [...pendingData];
+                              newData[idx].date = e.target.value;
+                              setPendingData(newData);
+                            }}
                             className="bg-transparent outline-none focus:text-blue-600"
                           />
                         </td>
                         <td className="p-4">
                           <input
                             type="text"
-                            defaultValue={tx.description}
+                            value={tx.description}
+                            onChange={e => {
+                              const newData = [...pendingData];
+                              newData[idx].description = e.target.value;
+                              setPendingData(newData);
+                            }}
                             className="bg-transparent outline-none focus:text-blue-600 w-full"
                           />
                         </td>
                         <td
                           className={`p-4 text-right font-black ${tx.amount < 0 ? "text-red-600" : "text-emerald-600"}`}
                         >
-                          {tx.amount.toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          })}
+                          <input
+                            type="number"
+                            value={tx.amount}
+                            onChange={e => {
+                              const newData = [...pendingData];
+                              newData[idx].amount = Number(e.target.value);
+                              setPendingData(newData);
+                            }}
+                            className="bg-transparent outline-none focus:text-blue-600 w-24 text-right"
+                          />
                         </td>
                       </tr>
                     ))}
