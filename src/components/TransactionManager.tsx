@@ -85,7 +85,6 @@ export default function TransactionManager() {
     setSortDirection(isAsc ? "desc" : "asc");
   };
 
-  // --- FILTRO CORRIGIDO PARA IGNORAR TIMEZONE ---
   const filteredTransactions = transactions
     .filter((tx) => {
       // Extrai o mês e ano diretamente da string (YYYY-MM-DD)
@@ -123,7 +122,6 @@ export default function TransactionManager() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Barra de Filtros (Mantida igual a sua) */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
         <div className="flex flex-col lg:flex-row justify-between gap-4">
           <div className="relative flex-1 group">
@@ -144,8 +142,6 @@ export default function TransactionManager() {
           </button>
         </div>
 
-        {/* Seus Filtros Originais Aqui... */}
-        {/* Adicionei os anos de 2024 a 2026 como você pediu */}
         <div className="flex flex-wrap gap-3 items-center pt-2">
           <select
             className="bg-slate-50 border-2 border-slate-100 rounded-xl py-2 px-3 text-xs font-bold text-slate-700 outline-none"
@@ -358,6 +354,7 @@ export default function TransactionManager() {
             setEditTransaction(tx);
             setSelectedTransaction(null);
           }}
+          categories={categories}
         />
       )}
     </div>

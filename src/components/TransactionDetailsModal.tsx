@@ -1,4 +1,5 @@
 "use client";
+
 import React from "react";
 import {
   FiX,
@@ -8,7 +9,6 @@ import {
   FiFileText,
   FiAlertCircle,
   FiRepeat,
-  FiPercent,
   FiTrash2,
   FiEdit2,
 } from "react-icons/fi";
@@ -16,8 +16,9 @@ import {
 interface TransactionDetailsModalProps {
   transaction: any;
   onClose: () => void;
-  onDelete?: (id: string) => void; // Nova prop para deletar
-  onEdit?: (transaction: any) => void; // Nova prop para editar
+  onDelete?: (id: string) => void; 
+  onEdit?: (transaction: any) => void; 
+  categories?: Array<{ id: string; name: string }>;
 }
 
 const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
@@ -25,6 +26,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
   onClose,
   onDelete,
   onEdit,
+  categories,
 }) => {
   if (!transaction) return null;
 
@@ -98,7 +100,23 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
               <DetailItem
                 icon={<FiTag className="text-purple-500" />}
                 label="Categoria"
-                value={transaction.category}
+                value={
+                  !transaction.category
+                    ? "—"
+                    : (() => {
+                        const cat = categories?.find(
+                          (c) => c.id === transaction.category,
+                        );
+                        if (!cat) return transaction.category;
+                        if (transaction.subcategory && cat.subcategories) {
+                          const sub = cat.subcategories.find(
+                            (s) => s.id === transaction.subcategory,
+                          );
+                          return sub ? `${cat.name} / ${sub.name}` : cat.name;
+                        }
+                        return cat.name;
+                      })()
+                }
               />
               <DetailItem
                 icon={<FiCreditCard className="text-amber-500" />}
@@ -142,7 +160,6 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
               />
             )}
 
-            {/* Flags */}
             <div className="flex gap-2 pt-2">
               {transaction.is_monthly && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase">
@@ -151,21 +168,19 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
               )}
             </div>
 
-            {/* Observação */}
             {transaction.observation && (
               <div className="mt-2 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <p className="text-[9px] font-black text-slate-400 uppercase mb-1 tracking-widest">
                   Anotações
                 </p>
                 <p className="text-xs text-slate-600 font-semibold italic">
-                  "{transaction.observation}"
+                  &quot;{transaction.observation}&quot;
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Footer com Ações Principais */}
         <footer className="p-6 bg-slate-50 border-t border-slate-100 flex gap-3">
           <button
             onClick={() => onDelete?.(transaction.id)}
