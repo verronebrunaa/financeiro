@@ -13,12 +13,34 @@ import {
   FiEdit2,
 } from "react-icons/fi";
 
+type Category = {
+  id: string;
+  name: string;
+  parent_id?: string | null;
+};
+
+type Transaction = {
+  id: string;
+  amount: number;
+  description?: string;
+  category?: string;
+  subcategory?: string;
+  payment_method?: string;
+  competence_date?: string;
+  due_date?: string;
+  payment_date?: string;
+  type?: "entrada" | "saida";
+  paid?: boolean;
+  is_monthly?: boolean;
+  observation?: string;
+};
+
 interface TransactionDetailsModalProps {
-  transaction: any;
+  transaction: Transaction | null;
   onClose: () => void;
-  onDelete?: (id: string) => void; 
-  onEdit?: (transaction: any) => void; 
-  categories?: Array<{ id: string; name: string }>;
+  onDelete?: (id: string) => void;
+  onEdit?: (transaction: Transaction) => void;
+  categories?: Category[];
 }
 
 const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
@@ -49,6 +71,8 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
       <div
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
         onClick={onClose}
+        tabIndex={-1}
+        aria-hidden="true"
       />
 
       <div className="relative w-full max-w-md bg-white rounded-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
@@ -93,7 +117,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
             <DetailItem
               icon={<FiFileText className="text-blue-500" />}
               label="Descrição"
-              value={transaction.description}
+              value={transaction.description || "—"}
             />
 
             <div className="grid grid-cols-2 gap-4">
@@ -101,27 +125,37 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
                 icon={<FiTag className="text-purple-500" />}
                 label="Categoria"
                 value={
-                  !transaction.category
-                    ? "—"
-                    : (() => {
-                        const cat = categories?.find(
-                          (c) => c.id === transaction.category,
+                  transaction.category
+                    ? (() => {
+                        const found = categories?.find(
+                          (cat) => cat.id === transaction.category,
                         );
-                        if (!cat) return transaction.category;
-                        if (transaction.subcategory && cat.subcategories) {
-                          const sub = cat.subcategories.find(
-                            (s) => s.id === transaction.subcategory,
+                        if (!found) return transaction.category;
+
+                        if (transaction.subcategory) {
+                          const sub = categories?.find(
+                            (cat) => cat.id === transaction.subcategory,
                           );
-                          return sub ? `${cat.name} / ${sub.name}` : cat.name;
+                          if (sub) return `${found.name} / ${sub.name}`;
                         }
-                        return cat.name;
+
+                        // fallback: category já é subcategoria
+                        if (found.parent_id) {
+                          const parent = categories?.find(
+                            (cat) => cat.id === found.parent_id,
+                          );
+                          if (parent) return `${parent.name} / ${found.name}`;
+                        }
+
+                        return found.name;
                       })()
+                    : "—"
                 }
               />
               <DetailItem
                 icon={<FiCreditCard className="text-amber-500" />}
                 label="Pagamento"
-                value={transaction.payment_method}
+                value={transaction.payment_method || "—"}
               />
             </div>
 

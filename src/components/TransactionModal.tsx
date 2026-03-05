@@ -114,8 +114,9 @@ export default function TransactionModal({
 
         if (error) throw error;
         setCategories(data || []);
-      } catch (err: any) {
-        console.error("Erro ao carregar categorias:", err.message);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("Erro ao carregar categorias:", message);
         toast.error("Erro ao carregar lista de categorias.");
       } finally {
         setLoadingCats(false);
@@ -133,12 +134,10 @@ export default function TransactionModal({
     (c) => c.id === formData.category,
   );
   const subcategorias = categoriaSelecionada
-    ? categories.filter(
-        (c) => c.parent_id === categoriaSelecionada.id,
-      )
+    ? categories.filter((c) => c.parent_id === categoriaSelecionada.id)
     : [];
   // Adiciona campo subcategory ao formData
-  if (!formData.hasOwnProperty('subcategory')) {
+  if (!formData.hasOwnProperty("subcategory")) {
     formData.subcategory = "";
   }
 
@@ -198,11 +197,15 @@ export default function TransactionModal({
     {
       initialData?.id && formData.status === "Pago" && (
         <div className="space-y-2 md:col-span-2">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+          <label
+            htmlFor="payment_date"
+            className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+          >
             Data do Pagamento
           </label>
           <input
             type="date"
+            id="payment_date"
             className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 px-4 font-bold text-slate-900 focus:border-blue-600 outline-none transition-all"
             value={formData.payment_date || todayLocal}
             onChange={(e) =>
@@ -263,6 +266,8 @@ export default function TransactionModal({
       <div
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
         onClick={onCloseAction}
+        tabIndex={-1}
+        aria-hidden="true"
       ></div>
 
       <div className="relative w-full max-w-3xl bg-white rounded-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 min-h-125 flex flex-col">
@@ -334,7 +339,10 @@ export default function TransactionModal({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  <label
+                    htmlFor="description"
+                    className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+                  >
                     Descrição
                   </label>
                   <input
@@ -350,7 +358,10 @@ export default function TransactionModal({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  <label
+                    htmlFor="amount"
+                    className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+                  >
                     Valor
                   </label>
                   <div className="relative">
@@ -373,7 +384,10 @@ export default function TransactionModal({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  <label
+                    htmlFor="category"
+                    className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+                  >
                     Categoria
                   </label>
                   <div className="relative">
@@ -383,7 +397,11 @@ export default function TransactionModal({
                       className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 px-4 font-bold text-slate-900 focus:border-blue-600 outline-none transition-all appearance-none cursor-pointer"
                       value={formData.category}
                       onChange={(e) =>
-                        setFormData({ ...formData, category: e.target.value, subcategory: "" })
+                        setFormData({
+                          ...formData,
+                          category: e.target.value,
+                          subcategory: "",
+                        })
                       }
                     >
                       <option value="">
@@ -408,15 +426,22 @@ export default function TransactionModal({
                 </div>
                 {subcategorias.length > 0 && (
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                    <label
+                      htmlFor="subcategory"
+                      className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+                    >
                       Subcategoria
                     </label>
                     <div className="relative">
                       <select
+                        id="subcategory"
                         className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 px-4 font-bold text-slate-900 focus:border-blue-600 outline-none transition-all appearance-none cursor-pointer"
                         value={formData.subcategory || ""}
                         onChange={(e) =>
-                          setFormData({ ...formData, subcategory: e.target.value })
+                          setFormData({
+                            ...formData,
+                            subcategory: e.target.value,
+                          })
                         }
                       >
                         <option value="">Selecione a subcategoria</option>
@@ -434,13 +459,17 @@ export default function TransactionModal({
                 )}
                 {/* Payment Method */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  <label
+                    htmlFor="payment_method"
+                    className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+                  >
                     Forma de Pagamento
                   </label>
                   <div className="relative">
                     <select
                       required
                       className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 px-4 font-bold text-slate-900 focus:border-blue-600 outline-none transition-all appearance-none cursor-pointer"
+                      id="payment_method"
                       value={formData.payment_method}
                       onChange={(e) =>
                         setFormData({
@@ -466,10 +495,14 @@ export default function TransactionModal({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  <label
+                    htmlFor="observation"
+                    className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+                  >
                     Observação
                   </label>
                   <textarea
+                    id="observation"
                     className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 px-4 font-bold text-slate-900 focus:border-blue-600 outline-none transition-all min-h-15"
                     placeholder="Observações sobre a transação"
                     value={formData.observation}
@@ -481,7 +514,10 @@ export default function TransactionModal({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                    <label
+                      htmlFor="competence_date"
+                      className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+                    >
                       Data Competência
                     </label>
                     <input
@@ -498,7 +534,10 @@ export default function TransactionModal({
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                    <label
+                      htmlFor="due_date"
+                      className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+                    >
                       Vencimento
                     </label>
                     <input
@@ -515,10 +554,14 @@ export default function TransactionModal({
 
                 {initialData?.id && (
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                    <label
+                      htmlFor="status"
+                      className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+                    >
                       Status
                     </label>
                     <select
+                      id="status"
                       className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 px-4 font-bold text-slate-900 focus:border-blue-600 outline-none transition-all"
                       value={formData.status || "pending"}
                       onChange={(e) =>
@@ -537,11 +580,15 @@ export default function TransactionModal({
                   >
                     {formData.status === "Pago" && (
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                        <label
+                          htmlFor="payment_date"
+                          className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1"
+                        >
                           Data do Pagamento
                         </label>
                         <input
                           type="date"
+                          id="payment_date"
                           className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-3.5 px-4 font-bold text-slate-900 focus:border-blue-600 outline-none transition-all"
                           value={formData.payment_date || todayLocal}
                           onChange={(e) =>
@@ -597,7 +644,7 @@ export default function TransactionModal({
 
                     {recurrenceType === "fixed" && (
                       <div className="animate-in slide-in-from-top-2 pt-4 flex items-center gap-4">
-                        <label className="text-xs font-bold text-slate-700">
+                        <label htmlFor="installments" className="text-xs font-bold text-slate-700">
                           Quantidade de parcelas:
                         </label>
                         <input

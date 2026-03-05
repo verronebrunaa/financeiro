@@ -23,10 +23,9 @@ const formatSafeDate = (dateStr: string | undefined) => {
 
 // Função para gerar cor pastel aleatória
 function getRandomColor(id: string) {
-  // Gera cor baseada no id para ser estável
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
-    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    hash = (id.codePointAt(i) ?? 0) + ((hash << 5) - hash);
   }
   const h = Math.abs(hash) % 360;
   return `hsl(${h}, 70%, 85%)`;
@@ -35,7 +34,7 @@ function getRandomColor(id: string) {
 export default function TransactionManager() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; color?: string }[]>([]);
   const [sortField, setSortField] = useState<string>("competence_date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [filterMonth, setFilterMonth] = useState<string>("");
@@ -60,7 +59,7 @@ export default function TransactionManager() {
     loadTransactions();
     // Busca categorias do backend
     const loadCategories = async () => {
-      const { data } = await supabase.from("categories").select("id, name");
+      const { data } = await supabase.from("categories").select("id, name, color");
       setCategories(data || []);
     };
     loadCategories();
@@ -168,7 +167,7 @@ export default function TransactionManager() {
                     const dateStr = tx.due_date || tx.competence_date;
                     return dateStr ? Number(dateStr.split("-")[0]) : null;
                   })
-                  .filter(Boolean),
+                  .filter((y): y is number => y !== null),
               ),
             ]
               .sort((a, b) => a - b)
@@ -228,15 +227,11 @@ export default function TransactionManager() {
             </thead>
             <tbody className="text-sm font-bold text-slate-900">
               {filteredTransactions.map((tx) => {
-                // Cálculo de status seguro ignorando fuso
                 const today = new Date().toLocaleDateString("en-CA");
                 const isPaid = tx.status === "Pago";
                 const isOverdue = tx.due_date && tx.due_date < today && !isPaid;
-                const statusLabel = isPaid
-                  ? "Pago"
-                  : isOverdue
-                    ? "Atrasado"
-                    : "Pendente";
+                const overDueStatus = isOverdue ? "Atrasado" : "Pendente";
+                const statusLabel = isPaid ? "Pago" : overDueStatus;
 
                 return (
                   <tr
@@ -345,13 +340,29 @@ export default function TransactionManager() {
         />
       )}
 
-      {selectedTransaction && (
+      {selectedTransaction && selectedTransaction.id && (
         <TransactionDetailsModal
-          transaction={selectedTransaction}
+          transaction={{
+            ...selectedTransaction,
+            id: selectedTransaction.id as string,
+            amount: Number(selectedTransaction.amount),
+          }}
           onClose={() => setSelectedTransaction(null)}
           onDelete={(id) => handleDelete(id)}
           onEdit={(tx) => {
-            setEditTransaction(tx);
+            setEditTransaction({
+              ...tx,
+              description: tx.description || "",
+              type: tx.type || "saida",
+              competence_date: tx.competence_date || "",
+              due_date: tx.due_date || "",
+              category: tx.category || "",
+              amount: Number(tx.amount) || 0,
+              payment_method: tx.payment_method || "",
+              observation: tx.observation || "",
+              is_monthly: tx.is_monthly || false,
+              payment_date: tx.payment_date || "",
+            });
             setSelectedTransaction(null);
           }}
           categories={categories}
