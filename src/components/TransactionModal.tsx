@@ -141,6 +141,21 @@ export default function TransactionModal({
     formData.subcategory = "";
   }
 
+  // Ao editar, se category salvo é subcategoria, resolver parent + sub
+  useEffect(() => {
+    if (initialData?.category && categories.length > 0 && !loadingCats) {
+      const cat = categories.find((c) => c.id === initialData.category);
+      if (cat?.parent_id) {
+        setFormData((prev) => ({
+          ...prev,
+          category: cat.parent_id!,
+          subcategory: initialData.category!,
+        }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories, loadingCats]);
+
   const resetForm = () => {
     setFormData(initialState);
     setRecurrenceType("none");
@@ -170,7 +185,7 @@ export default function TransactionModal({
         amount: finalAmount,
         competence_date: formData.competence_date,
         due_date: formData.due_date,
-        category: formData.category,
+        category: formData.subcategory || formData.category,
         payment_method: formData.payment_method,
         observation: formData.observation,
         type: formData.type,
@@ -238,7 +253,7 @@ export default function TransactionModal({
         amount: finalAmount,
         competence_date: nextCompetence,
         due_date: nextDue,
-        category: formData.category,
+        category: formData.subcategory || formData.category,
         payment_method: formData.payment_method,
         observation: formData.observation,
         is_monthly: recurrenceType !== "none",

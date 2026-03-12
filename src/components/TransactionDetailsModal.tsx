@@ -11,6 +11,7 @@ import {
   FiRepeat,
   FiTrash2,
   FiEdit2,
+  FiCopy,
 } from "react-icons/fi";
 
 type Category = {
@@ -30,9 +31,12 @@ type Transaction = {
   due_date?: string;
   payment_date?: string;
   type?: "entrada" | "saida";
-  paid?: boolean;
+  status?: string;
   is_monthly?: boolean;
   observation?: string;
+  recurrence_group_id?: string;
+  installment_number?: number;
+  total_installments?: number;
 };
 
 interface TransactionDetailsModalProps {
@@ -40,6 +44,7 @@ interface TransactionDetailsModalProps {
   onClose: () => void;
   onDelete?: (id: string) => void;
   onEdit?: (transaction: Transaction) => void;
+  onDuplicate?: (transaction: Transaction) => void;
   categories?: Category[];
 }
 
@@ -48,17 +53,25 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
   onClose,
   onDelete,
   onEdit,
+  onDuplicate,
   categories,
 }) => {
   if (!transaction) return null;
 
   const isNegative = transaction.amount < 0;
 
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "—";
+    const [y, m, d] = dateStr.split("-");
+    return `${d}/${m}/${y}`;
+  };
+
   const getStatus = () => {
-    if (transaction.paid)
+    if (transaction.status === "Pago")
       return { label: "Pago", class: "bg-emerald-100 text-emerald-700" };
     const isOverdue =
-      transaction.due_date && new Date(transaction.due_date) < new Date();
+      transaction.status === "overdue" ||
+      (transaction.due_date && new Date(transaction.due_date + "T00:00:00") < new Date());
     if (isOverdue)
       return { label: "Atrasado", class: "bg-red-100 text-red-700" };
     return { label: "Pendente", class: "bg-amber-100 text-amber-700" };
@@ -163,22 +176,12 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
               <DetailItem
                 icon={<FiCalendar className="text-slate-400" />}
                 label="Competência"
-                value={
-                  transaction.competence_date
-                    ? new Date(transaction.competence_date).toLocaleDateString(
-                        "pt-BR",
-                      )
-                    : "-"
-                }
+                value={formatDate(transaction.competence_date)}
               />
               <DetailItem
                 icon={<FiAlertCircle className="text-red-400" />}
                 label="Vencimento"
-                value={
-                  transaction.due_date
-                    ? new Date(transaction.due_date).toLocaleDateString("pt-BR")
-                    : "-"
-                }
+                value={formatDate(transaction.due_date)}
               />
             </div>
 
@@ -188,16 +191,19 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
                 label={
                   transaction.type === "entrada" ? "Recebido em" : "Pago em"
                 }
-                value={new Date(transaction.payment_date).toLocaleDateString(
-                  "pt-BR",
-                )}
+                value={formatDate(transaction.payment_date)}
               />
             )}
 
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 pt-2 flex-wrap">
               {transaction.is_monthly && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-black uppercase">
                   <FiRepeat size={14} /> Mensal
+                </div>
+              )}
+              {transaction.installment_number && transaction.total_installments && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase">
+                  Parcela {transaction.installment_number}/{transaction.total_installments}
                 </div>
               )}
             </div>
@@ -222,6 +228,15 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
           >
             <FiTrash2 size={16} /> Excluir
           </button>
+
+          {onDuplicate && (
+            <button
+              onClick={() => onDuplicate(transaction)}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-white border-2 border-blue-100 text-blue-600 font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-blue-50 hover:border-blue-200 transition-all active:scale-95 shadow-sm shadow-blue-50"
+            >
+              <FiCopy size={16} /> Duplicar
+            </button>
+          )}
 
           <button
             onClick={() => onEdit?.(transaction)}

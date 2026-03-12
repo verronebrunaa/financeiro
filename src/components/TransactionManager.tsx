@@ -116,6 +116,38 @@ export default function TransactionManager() {
     }
   };
 
+  const handleDuplicate = async (tx: { id: string; amount: number; description?: string; category?: string; subcategory?: string; payment_method?: string; competence_date?: string; due_date?: string; payment_date?: string; type?: "entrada" | "saida"; is_monthly?: boolean; observation?: string }) => {
+    if (atFreeLimit) {
+      toast.error("Limite de transações do plano Free atingido.");
+      return;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase.from("transactions").insert({
+      user_id: user.id,
+      description: tx.description || "",
+      amount: tx.amount,
+      type: tx.type || "saida",
+      category: tx.category || null,
+      subcategory: tx.subcategory || null,
+      payment_method: tx.payment_method || null,
+      competence_date: tx.competence_date || null,
+      due_date: tx.due_date || null,
+      observation: tx.observation || null,
+      is_monthly: false,
+      status: "Pendente",
+    });
+
+    if (error) {
+      toast.error("Erro ao duplicar transação");
+    } else {
+      toast.success("Transação duplicada com sucesso!");
+      setSelectedTransaction(null);
+      loadTransactions();
+    }
+  };
+
   const handleSort = (field: string) => {
     const isAsc = sortField === field && sortDirection === "asc";
     setSortField(field);
@@ -668,6 +700,7 @@ export default function TransactionManager() {
           }}
           onClose={() => setSelectedTransaction(null)}
           onDelete={(id) => handleDelete(id)}
+          onDuplicate={(tx) => handleDuplicate(tx)}
           onEdit={(tx) => {
             setEditTransaction({
               ...tx,
