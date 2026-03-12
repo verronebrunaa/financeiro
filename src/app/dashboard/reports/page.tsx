@@ -19,7 +19,7 @@ export default function ReportsPage() {
             </p>
           </header>
 
-          <UpgradeGate feature="all_charts" label="Relatórios avançados, gráficos e Finnan Intelligence estão disponíveis nos planos pagos">
+          <UpgradeGate feature="all_charts" label="Relatórios avançados, gráficos e Finnan Intelligence estão disponíveis na Assinatura do Finnan">
             <ReportsManager />
           </UpgradeGate>
         </div>

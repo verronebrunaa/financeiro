@@ -41,7 +41,7 @@ export default function UpgradeGate({
             Recurso Premium
           </h3>
           <p className="text-sm text-slate-500 font-medium mb-6">
-            {label || "Este recurso está disponível nos planos pagos."}
+            {label || "Este recurso está disponível na Assinatura do Finnan."}
             {" "}Faça upgrade para desbloquear.
           </p>
           <Link
@@ -49,7 +49,7 @@ export default function UpgradeGate({
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm rounded-2xl transition-all active:scale-95 shadow-lg"
           >
             <FiZap size={16} />
-            Ver Planos
+            Ver Assinatura
           </Link>
         </div>
       </div>

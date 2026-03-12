@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
     const planInfo = PLANS[plan];
     if (!planInfo) {
-      return NextResponse.json({ error: "Plano inválido" }, { status: 400 });
+      return NextResponse.json({ error: "Assinatura inválida" }, { status: 400 });
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";

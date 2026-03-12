@@ -292,7 +292,7 @@ export default function TransactionManager() {
           <span className="text-sm font-bold text-amber-800">
             {atFreeLimit
               ? `Limite atingido! ${monthlyTxCount}/${FREE_LIMITS.transactions_per_month} transações neste mês.`
-              : `${monthlyTxCount}/${FREE_LIMITS.transactions_per_month} transações neste mês no plano Free.`}
+              : `${monthlyTxCount}/${FREE_LIMITS.transactions_per_month} transações neste mês na Assinatura Free.`}
           </span>
           <Link href="/dashboard/plans" className="px-4 py-1.5 bg-amber-500 text-white rounded-xl text-xs font-black hover:bg-amber-600 transition-colors whitespace-nowrap">
             Fazer Upgrade
@@ -431,7 +431,7 @@ export default function TransactionManager() {
       {selected.size > 0 && !canUse("bulk_operations") && (
         <div className="bg-slate-100 border border-slate-200 rounded-2xl px-4 sm:px-6 py-3 flex items-center justify-between gap-3 animate-in slide-in-from-top-2 duration-200">
           <span className="text-sm font-bold text-slate-600">Operações em lote são um recurso Pro</span>
-          <Link href="/dashboard/plans" className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-700 transition-colors">Ver Planos</Link>
+          <Link href="/dashboard/plans" className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-700 transition-colors">Ver Assinatura</Link>
         </div>
       )}
 

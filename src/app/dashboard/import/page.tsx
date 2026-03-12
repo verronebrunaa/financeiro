@@ -19,7 +19,7 @@ export default function Page() {
             </p>
           </header>
 
-          <UpgradeGate feature="import_csv" label="A importação de dados está disponível nos planos pagos">
+          <UpgradeGate feature="import_csv" label="A importação de dados está disponível na Assinatura do Finnan">
             <ImportManager />
           </UpgradeGate>
         </div>

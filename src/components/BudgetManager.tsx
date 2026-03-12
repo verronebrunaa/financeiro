@@ -10,7 +10,6 @@ import {
   FiEdit2,
   FiTrash2,
   FiCopy,
-  FiChevronDown,
 } from "react-icons/fi";
 import supabase from "../lib/supabaseClient";
 import toast from "react-hot-toast";
@@ -70,7 +69,7 @@ export default function BudgetManager() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
-  const [expandedBudget, setExpandedBudget] = useState<string | null>(null);
+  const [detailBudget, setDetailBudget] = useState<Budget | null>(null);
 
   // Form
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -431,12 +430,9 @@ export default function BudgetManager() {
             return (
               <div
                 key={budget.id}
-                className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all group"
+                onClick={() => setDetailBudget(budget)}
+                className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-sm p-5 sm:p-6 hover:shadow-md transition-all group cursor-pointer"
               >
-                <div
-                  className="p-5 sm:p-6 cursor-pointer"
-                  onClick={() => setExpandedBudget(expandedBudget === budget.id ? null : budget.id)}
-                >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div
@@ -465,13 +461,13 @@ export default function BudgetManager() {
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={() => openModal(budget)}
+                      onClick={(e) => { e.stopPropagation(); openModal(budget); }}
                       className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                     >
                       <FiEdit2 size={14} />
                     </button>
                     <button
-                      onClick={() => handleDelete(budget.id)}
+                      onClick={(e) => { e.stopPropagation(); handleDelete(budget.id); }}
                       className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                     >
                       <FiTrash2 size={14} />
@@ -513,65 +509,7 @@ export default function BudgetManager() {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center justify-center mt-3">
-                    <FiChevronDown
-                      size={14}
-                      className={`text-slate-300 transition-transform duration-200 ${
-                        expandedBudget === budget.id ? "rotate-180" : ""
-                      }`}
-                    />
-                  </div>
                 </div>
-                </div>
-
-                {/* Detail panel */}
-                {expandedBudget === budget.id && (
-                  <div className="border-t border-slate-100 px-5 sm:px-6 pb-5 sm:pb-6 pt-3 animate-in slide-in-from-top-2 fade-in duration-200">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
-                      Transações Pagas
-                    </p>
-                    {(() => {
-                      const txs = txsByParentCategory.get(budget.category_id || "") || [];
-                      if (txs.length === 0) {
-                        return (
-                          <p className="text-xs text-slate-400 font-medium italic py-2">
-                            Nenhuma transação paga neste mês.
-                          </p>
-                        );
-                      }
-                      return (
-                        <div className="space-y-2">
-                          {txs.map((tx) => (
-                            <div
-                              key={tx.id}
-                              className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-xl"
-                            >
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-slate-700 truncate">
-                                  {tx.description || "Sem descrição"}
-                                </p>
-                                <p className="text-[10px] text-slate-400 font-medium">
-                                  {getCatNameById(tx.category)} · {tx.due_date ? new Date(tx.due_date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
-                                </p>
-                              </div>
-                              <span className="text-xs font-black text-red-500 ml-3 whitespace-nowrap">
-                                -{fmt(Math.abs(tx.amount))}
-                              </span>
-                            </div>
-                          ))}
-                          <div className="flex justify-between pt-2 border-t border-slate-100">
-                            <span className="text-[10px] font-black text-slate-400 uppercase">
-                              {txs.length} transaç{txs.length === 1 ? "ão" : "ões"}
-                            </span>
-                            <span className="text-xs font-black text-slate-900">
-                              {fmt(txs.reduce((s, t) => s + Math.abs(t.amount), 0))}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
               </div>
             );
           })}
@@ -699,6 +637,112 @@ export default function BudgetManager() {
           </div>
         </div>
       )}
+
+      {/* Detail Modal */}
+      {detailBudget && (() => {
+        const txs = txsByParentCategory.get(detailBudget.category_id || "") || [];
+        const spent = spentByCategory.get(detailBudget.category_id || "") || 0;
+        const pct = detailBudget.limit_amount > 0 ? spent / detailBudget.limit_amount : 0;
+        const isOver = pct > 1;
+        const catName = getCatName(detailBudget.category_id);
+        const catColor = getCatColor(detailBudget.category_id);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white w-full sm:max-w-lg max-h-[85vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col animate-in slide-in-from-bottom-4 duration-300">
+              {/* Header */}
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: catColor + "22" }}
+                  >
+                    <FiTarget size={18} style={{ color: catColor }} />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-900 text-base">{catName}</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      {viewLabel} · {txs.length} transaç{txs.length === 1 ? "ão" : "ões"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDetailBudget(null)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                >
+                  <FiX size={18} />
+                </button>
+              </div>
+
+              {/* Progress summary */}
+              <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100 shrink-0">
+                <div className="flex items-baseline justify-between mb-2">
+                  <span className="text-2xl font-black text-slate-900">{fmt(spent)}</span>
+                  <span className="text-sm font-bold text-slate-400">/ {fmt(detailBudget.limit_amount)}</span>
+                </div>
+                <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      isOver ? "bg-red-500" : pct > 0.7 ? "bg-amber-500" : "bg-emerald-500"
+                    }`}
+                    style={{ width: `${Math.min(pct * 100, 100)}%` }}
+                  />
+                </div>
+                <div className="flex justify-between mt-1.5">
+                  <span className="text-[10px] font-black text-slate-400 uppercase">{Math.round(pct * 100)}% usado</span>
+                  {isOver ? (
+                    <span className="text-[10px] font-black text-red-500">+ {fmt(spent - detailBudget.limit_amount)} acima</span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-slate-400">{fmt(detailBudget.limit_amount - spent)} restante</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Transaction list */}
+              <div className="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
+                {txs.length === 0 ? (
+                  <p className="text-sm text-slate-400 font-medium italic text-center py-8">
+                    Nenhuma transação paga neste mês.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {txs.map((tx) => (
+                      <div
+                        key={tx.id}
+                        className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-slate-800 truncate">
+                            {tx.description || "Sem descrição"}
+                          </p>
+                          <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                            {getCatNameById(tx.category)} · {tx.due_date ? new Date(tx.due_date + "T12:00:00").toLocaleDateString("pt-BR") : "—"}
+                          </p>
+                        </div>
+                        <span className="text-sm font-black text-red-500 ml-4 whitespace-nowrap">
+                          -{fmt(Math.abs(tx.amount))}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer total */}
+              {txs.length > 0 && (
+                <div className="px-6 py-4 border-t border-slate-100 flex justify-between items-center shrink-0">
+                  <span className="text-xs font-black text-slate-400 uppercase">
+                    Total
+                  </span>
+                  <span className="text-base font-black text-slate-900">
+                    {fmt(txs.reduce((s, t) => s + Math.abs(t.amount), 0))}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

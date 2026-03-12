@@ -47,7 +47,7 @@ export default function Sidebar() {
     { name: "Categorias", href: "/dashboard/categories", icon: FiGrid },
     { name: "Orçamentos", href: "/dashboard/budgets", icon: FiTarget },
     { name: "Metas", href: "/dashboard/goals", icon: FiFlag },
-    { name: "Planos", href: "/dashboard/plans", icon: FiZap },
+    { name: "Assinatura", href: "/dashboard/plans", icon: FiZap },
   ];
 
   const sidebarContent = (

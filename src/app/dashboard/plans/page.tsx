@@ -90,7 +90,7 @@ export default function PlansPage() {
     if (status === "success" && returnedPlan) {
       toast.show({
         title: "Pagamento aprovado!",
-        message: `Seu plano ${returnedPlan === "pro" ? "Pro" : "Premium"} já está ativo. Aproveite!`,
+        message: `Sua Assinatura ${returnedPlan === "pro" ? "Pro" : "Premium"} já está ativa. Aproveite!`,
         variant: "success",
       });
       refresh();
@@ -189,10 +189,10 @@ export default function PlansPage() {
         <div className="max-w-5xl mx-auto">
           <header className="mb-8 sm:mb-12 text-center">
             <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter italic">
-              Planos<span className="text-blue-600">.</span>
+              Assinatura<span className="text-blue-600">.</span>
             </h1>
             <p className="text-slate-500 font-bold mt-2 text-base sm:text-lg max-w-xl mx-auto">
-              Escolha o plano ideal para suas necessidades financeiras. Cancele
+              Escolha a Assinatura ideal para suas necessidades financeiras. Cancele
               quando quiser.
             </p>
           </header>
@@ -202,7 +202,7 @@ export default function PlansPage() {
             <div className="text-center mb-8">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-sm font-bold text-slate-700 shadow-sm">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                Plano atual:{" "}
+                Assinatura atual:{" "}
                 <span className="font-black text-slate-900 uppercase">
                   {subscription.plan}
                 </span>
@@ -316,7 +316,7 @@ export default function PlansPage() {
                   {/* CTA Button */}
                   {isCurrent ? (
                     <div className="w-full py-3 rounded-2xl text-center text-sm font-black bg-slate-100 text-slate-500">
-                      Plano Atual
+                      Assinatura Atual
                     </div>
                   ) : isUpgrade ? (
                     <button

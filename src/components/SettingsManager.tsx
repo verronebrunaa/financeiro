@@ -343,7 +343,7 @@ export default function SettingsManager() {
             </div>
             <div>
               <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                Plano {subscription.plan === "free" ? "Gratuito" : subscription.plan === "pro" ? "Pro" : "Premium"}
+                Assinatura {subscription.plan === "free" ? "Gratuito" : subscription.plan === "pro" ? "Pro" : "Premium"}
               </h3>
               {subscription.currentPeriodEnd && isPaid ? (
                 <p className="text-sm text-slate-500 font-medium">
@@ -364,7 +364,7 @@ export default function SettingsManager() {
                 : "bg-blue-600 text-white hover:bg-blue-700 shadow-lg"
             }`}
           >
-            {isPaid ? "Gerenciar Plano" : "Fazer Upgrade"}
+            {isPaid ? "Gerenciar Assinatura" : "Fazer Upgrade"}
           </Link>
         </div>
       </section>
