@@ -236,6 +236,10 @@ export default function LoginPage() {
             </p>
           </div>
         </div>
+
+        <p className="mt-6 text-center text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+          Finnan v{process.env.APP_VERSION}
+        </p>
       </div>
     </div>
   );

@@ -383,6 +383,11 @@ export default function SettingsManager() {
           Excluir Tudo
         </button>
       </div>
+
+      {/* Versão */}
+      <p className="text-center text-[10px] font-bold text-slate-300 uppercase tracking-widest py-4">
+        Finnan v{process.env.APP_VERSION}
+      </p>
     </div>
   );
 }
