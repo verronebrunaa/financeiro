@@ -16,6 +16,8 @@ import {
   FiMenu,
   FiX,
   FiZap,
+  FiTarget,
+  FiFlag,
 } from "react-icons/fi";
 import supabase from "../lib/supabaseClient";
 import { useAuth } from "./AuthProvider";
@@ -43,6 +45,8 @@ export default function Sidebar() {
     { name: "Transações", href: "/dashboard/transactions", icon: FiList },
     { name: "Relatórios", href: "/dashboard/reports", icon: FiPieChart },
     { name: "Categorias", href: "/dashboard/categories", icon: FiGrid },
+    { name: "Orçamentos", href: "/dashboard/budgets", icon: FiTarget },
+    { name: "Metas", href: "/dashboard/goals", icon: FiFlag },
     { name: "Planos", href: "/dashboard/plans", icon: FiZap },
   ];
 
