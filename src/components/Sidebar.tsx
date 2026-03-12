@@ -15,14 +15,17 @@ import {
   FiGrid,
   FiMenu,
   FiX,
+  FiZap,
 } from "react-icons/fi";
 import supabase from "../lib/supabaseClient";
 import { useAuth } from "./AuthProvider";
+import { useSubscription } from "@/hooks/useSubscription";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
+  const { subscription } = useSubscription();
   const [open, setOpen] = useState(false);
   const isActive = (path: string) => pathname === path;
 
@@ -40,6 +43,7 @@ export default function Sidebar() {
     { name: "Transações", href: "/dashboard/transactions", icon: FiList },
     { name: "Relatórios", href: "/dashboard/reports", icon: FiPieChart },
     { name: "Categorias", href: "/dashboard/categories", icon: FiGrid },
+    { name: "Planos", href: "/dashboard/plans", icon: FiZap },
   ];
 
   const sidebarContent = (
@@ -123,8 +127,11 @@ export default function Sidebar() {
               <span className="text-[12px] font-black text-slate-900 leading-none truncate w-24">
                 {email.split("@")[0]}
               </span>
-              <span className="text-[10px] font-bold text-blue-600 mt-1 uppercase tracking-tighter">
-                Premium
+              <span className={`text-[10px] font-bold mt-1 uppercase tracking-tighter ${
+                subscription.plan === "premium" ? "text-amber-600" :
+                subscription.plan === "pro" ? "text-blue-600" : "text-slate-400"
+              }`}>
+                {subscription.plan === "free" ? "Free" : subscription.plan === "pro" ? "Pro" : "Premium"}
               </span>
             </div>
           </div>

@@ -9,10 +9,14 @@ import {
   FiCamera,
   FiSave,
   FiCheckCircle,
+  FiZap,
+  FiStar,
 } from "react-icons/fi";
+import Link from "next/link";
 import supabase from "../lib/supabaseClient";
 import { useAuth } from "./AuthProvider";
 import { useToast } from "./ToastProvider";
+import { useSubscription } from "@/hooks/useSubscription";
 
 function formatPhone(value: string) {
   const digits = value.replace(/\D/g, "");
@@ -26,6 +30,7 @@ function formatPhone(value: string) {
 export default function SettingsManager() {
   const { user } = useAuth();
   const toast = useToast();
+  const { subscription, isPaid } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [profilePic, setProfilePic] = useState<string | null>(null);
@@ -311,6 +316,50 @@ export default function SettingsManager() {
           </div>
         </section>
       </div>
+
+      {/* SEÇÃO: Plano Atual */}
+      <section className="bg-white rounded-4xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-8 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className={`p-4 rounded-2xl ${
+              subscription.plan === "premium" ? "bg-amber-50" :
+              subscription.plan === "pro" ? "bg-blue-50" : "bg-slate-100"
+            }`}>
+              {subscription.plan === "premium" ? (
+                <FiStar className="text-amber-500" size={24} />
+              ) : subscription.plan === "pro" ? (
+                <FiZap className="text-blue-600" size={24} />
+              ) : (
+                <FiShield className="text-slate-400" size={24} />
+              )}
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                Plano {subscription.plan === "free" ? "Gratuito" : subscription.plan === "pro" ? "Pro" : "Premium"}
+              </h3>
+              {subscription.currentPeriodEnd && isPaid ? (
+                <p className="text-sm text-slate-500 font-medium">
+                  Válido até {new Date(subscription.currentPeriodEnd).toLocaleDateString("pt-BR")}
+                </p>
+              ) : (
+                <p className="text-sm text-slate-500 font-medium">
+                  {isPaid ? "Assinatura ativa" : "Funcionalidades limitadas"}
+                </p>
+              )}
+            </div>
+          </div>
+          <Link
+            href="/dashboard/plans"
+            className={`px-6 py-3 rounded-2xl text-sm font-black transition-all active:scale-95 ${
+              isPaid
+                ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                : "bg-blue-600 text-white hover:bg-blue-700 shadow-lg"
+            }`}
+          >
+            {isPaid ? "Gerenciar Plano" : "Fazer Upgrade"}
+          </Link>
+        </div>
+      </section>
 
       {/* ZONA DE PERIGO */}
       <div className="p-8 bg-red-50/50 rounded-4xl border border-red-100 flex items-center justify-between">
