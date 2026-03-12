@@ -49,7 +49,7 @@ export default function SettingsManager() {
         if (!user) return;
         const { data, error } = await supabase
           .from("profiles")
-          .select("full_name, phone")
+          .select("full_name, phone, avatar_url")
           .eq("id", user.id)
           .single();
         if (error) throw error;
@@ -58,6 +58,7 @@ export default function SettingsManager() {
           phone: data?.phone || "",
           email: user.email || "",
         });
+        if (data?.avatar_url) setProfilePic(data.avatar_url);
       } catch (err) {
         toast.show({
           title: "Erro",
@@ -119,6 +120,11 @@ export default function SettingsManager() {
         .from("profile-pics")
         .getPublicUrl(fileName).data;
       setProfilePic(publicUrl);
+      // Salvar URL no perfil do banco
+      await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq("id", user.id);
       toast.show({
         title: "Sucesso",
         message: "Foto de perfil atualizada!",

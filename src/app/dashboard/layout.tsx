@@ -15,10 +15,10 @@ export default function DashboardLayout({
   useEffect(() => {
     async function check() {
       const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        router.push("/login");
-      } else {
+      if (data.session) {
         setLoading(false);
+      } else {
+        router.push("/login");
       }
     }
     check();

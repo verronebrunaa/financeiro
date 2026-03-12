@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import Importer from "./Importer";
 import supabase from "../lib/supabaseClient";
+import { useAuth } from "./AuthProvider";
 
 interface PendingTx {
   id: string;
@@ -22,6 +23,7 @@ interface PendingTx {
 }
 
 export default function ImportManager() {
+  const { user } = useAuth();
   const [pendingData, setPendingData] = useState<PendingTx[]>([]);
   const [importHistory, setImportHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,7 +66,7 @@ export default function ImportManager() {
     try {
       const { data: batch, error: batchError } = await supabase
         .from("import_batches")
-        .insert([{ file_name: "extrato_importado.csv" }])
+        .insert([{ file_name: "extrato_importado.csv", user_id: user?.id }])
         .select()
         .single();
 

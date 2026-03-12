@@ -21,6 +21,7 @@ export default function CategoryManager() {
   // Estados para o Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
+  const [newCatColor, setNewCatColor] = useState("#3b82f6");
   const [newCatNature, setNewCatNature] = useState<"fixo" | "variavel">(
     "variavel",
   );
@@ -69,6 +70,7 @@ export default function CategoryManager() {
           name: newCatName,
           type: activeTab,
           nature: newCatNature,
+          color: newCatColor,
           parent_id: parentForSub ? parentForSub.id : null,
           user_id: user?.id,
         },
@@ -158,6 +160,7 @@ export default function CategoryManager() {
   function closeModal() {
     setIsModalOpen(false);
     setNewCatName("");
+    setNewCatColor("#3b82f6");
     setParentForSub(null);
   }
 
@@ -261,6 +264,32 @@ export default function CategoryManager() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <label htmlFor="category-color" className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
+                  Cor
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    id="category-color"
+                    type="color"
+                    value={newCatColor}
+                    onChange={(e) => setNewCatColor(e.target.value)}
+                    className="w-12 h-12 rounded-xl border-2 border-slate-100 cursor-pointer"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {["#3b82f6", "#ef4444", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4", "#64748b"].map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setNewCatColor(c)}
+                        className={`w-8 h-8 rounded-lg transition-all ${newCatColor === c ? "ring-2 ring-offset-2 ring-slate-900 scale-110" : "hover:scale-110"}`}
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               {!parentForSub && (
                 <div className="space-y-2">
                   <label htmlFor="category-nature" className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
@@ -345,8 +374,11 @@ function CategoryCard({
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 bg-slate-900 text-white rounded-[20px] flex items-center justify-center shadow-lg shadow-slate-200">
-            <FiGrid size={24} />
+          <div
+            className="w-14 h-14 rounded-[20px] flex items-center justify-center shadow-lg shadow-slate-200"
+            style={{ backgroundColor: category.color || "#1e293b" }}
+          >
+            <FiGrid size={24} className="text-white" />
           </div>
           <div>
             <h4 className="font-black text-slate-900 text-lg leading-tight tracking-tighter">
