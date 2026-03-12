@@ -248,10 +248,11 @@ export default function CategoryManager() {
 
             <form onSubmit={handleAddCategory} className="p-8 space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
+                <label htmlFor="category-name" className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
                   Nome da Categoria
                 </label>
                 <input
+                  id="category-name"
                   autoFocus
                   className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-2xl py-4 px-6 font-bold text-slate-900 transition-all outline-none"
                   placeholder="Ex: Aluguel, Uber, Lanches..."
@@ -262,11 +263,12 @@ export default function CategoryManager() {
 
               {!parentForSub && (
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
+                  <label htmlFor="category-nature" className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
                     Natureza do Gasto
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     <button
+                      id="category-nature"
                       type="button"
                       onClick={() => setNewCatNature("fixo")}
                       className={`py-3 rounded-xl font-bold text-xs transition-all ${newCatNature === "fixo" ? "bg-slate-900 text-white shadow-lg" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
@@ -298,7 +300,7 @@ export default function CategoryManager() {
       {/* MODAL DE EXCLUSÃO */}
       {deleteCatId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden">
+          <div className="bg-white w-full max-w-md rounded-4xl shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h3 className="font-black text-slate-900 uppercase tracking-tight italic">
                 Confirmar Exclusão

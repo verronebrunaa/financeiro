@@ -26,7 +26,7 @@ export function SummaryCard({
       <div className="flex flex-col h-full  justify-between">
         <div className="flex items-center justify-between mb-4">
           <div
-            className={`w-14 h-14 ${bg} ${color} rounded-2xl flex items-center justify-center text-2xl shadow-inner transition-transform duration-500 group-hover:rotate-[10deg]`}
+            className={`w-14 h-14 ${bg} ${color} rounded-2xl flex items-center justify-center text-2xl shadow-inner transition-transform duration-500 group-hover:rotate-10`}
           >
             {icon}
           </div>

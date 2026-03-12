@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -12,6 +13,8 @@ import {
   FiBell,
   FiSearch,
   FiGrid,
+  FiMenu,
+  FiX,
 } from "react-icons/fi";
 import supabase from "../lib/supabaseClient";
 import { useAuth } from "./AuthProvider";
@@ -20,6 +23,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
+  const [open, setOpen] = useState(false);
   const isActive = (path: string) => pathname === path;
 
   async function handleSignOut() {
@@ -30,8 +34,16 @@ export default function Sidebar() {
   const email = user?.email ?? "Convidado";
   const initials = email.charAt(0).toUpperCase();
 
-  return (
-    <aside className="w-72 border-r border-slate-200 min-h-screen bg-white flex flex-col p-6 relative">
+  const navItems = [
+    { name: "Dashboard", href: "/dashboard", icon: FiHome },
+    { name: "Importar", href: "/dashboard/import", icon: FiUpload },
+    { name: "Transações", href: "/dashboard/transactions", icon: FiList },
+    { name: "Relatórios", href: "/dashboard/reports", icon: FiPieChart },
+    { name: "Categorias", href: "/dashboard/categories", icon: FiGrid },
+  ];
+
+  const sidebarContent = (
+    <>
       <div className="flex items-center justify-between mb-10 px-2">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-100">
@@ -41,10 +53,15 @@ export default function Sidebar() {
             Finnan.
           </span>
         </div>
-        {/* TODO: notificações */}
-        <button className="relative p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+        <button className="relative p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all max-lg:hidden">
           <FiBell size={20} />
           <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 border-2 border-white rounded-full"></span>
+        </button>
+        <button
+          onClick={() => setOpen(false)}
+          className="p-2 text-slate-400 hover:text-slate-900 rounded-xl transition-all lg:hidden"
+        >
+          <FiX size={22} />
         </button>
       </div>
 
@@ -64,16 +81,11 @@ export default function Sidebar() {
           Menu Principal
         </p>
 
-        {[
-          { name: "Dashboard", href: "/dashboard", icon: FiHome },
-          { name: "Importar", href: "/dashboard/import", icon: FiUpload },
-          { name: "Transações", href: "/dashboard/transactions", icon: FiList },
-          { name: "Relatórios", href: "/dashboard/reports", icon: FiPieChart },
-          { name: "Categorias", href: "/dashboard/categories", icon: FiGrid },
-        ].map((item) => (
+        {navItems.map((item) => (
           <Link
             key={item.href}
             href={item.href}
+            onClick={() => setOpen(false)}
             className={`
               flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200
               ${
@@ -92,6 +104,7 @@ export default function Sidebar() {
       <div className="pt-6 border-t border-slate-100 flex flex-col gap-1">
         <Link
           href="/dashboard/settings"
+          onClick={() => setOpen(false)}
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 font-semibold transition-colors group"
         >
           <FiSettings
@@ -123,6 +136,56 @@ export default function Sidebar() {
           </button>
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-lg border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+        <button
+          onClick={() => setOpen(true)}
+          className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+        >
+          <FiMenu size={22} />
+        </button>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+            <span className="text-white font-bold text-sm italic">$</span>
+          </div>
+          <span className="font-black text-lg tracking-tighter text-slate-900 italic">
+            Finnan.
+          </span>
+        </div>
+        <button className="relative p-2 text-slate-400 hover:text-blue-600 rounded-xl transition-all">
+          <FiBell size={20} />
+          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 border-2 border-white rounded-full"></span>
+        </button>
+      </div>
+
+      {/* Mobile overlay */}
+      {open && (
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      {/* Mobile drawer */}
+      <aside
+        className={`
+          lg:hidden fixed top-0 left-0 z-50 w-72 h-full bg-white flex flex-col p-6
+          transition-transform duration-300 ease-in-out
+          ${open ? "translate-x-0" : "-translate-x-full"}
+        `}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex w-72 border-r border-slate-200 min-h-screen bg-white flex-col p-6 relative">
+        {sidebarContent}
+      </aside>
+    </>
   );
 }
