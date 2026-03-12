@@ -67,7 +67,7 @@ export default function SettingsManager() {
       }
     }
     fetchProfile();
-  }, [user]);
+  }, [toast, user]);
 
   const handleSave = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -84,7 +84,13 @@ export default function SettingsManager() {
       })
       .eq("id", user.id);
 
-    if (!error) {
+    if (error) {
+      toast.show({
+        title: "Erro",
+        message: error.message || "Erro ao atualizar perfil.",
+        variant: "error",
+      });
+    } else {
       setSaved(true);
       toast.show({
         title: "Sucesso",
@@ -92,12 +98,6 @@ export default function SettingsManager() {
         variant: "success",
       });
       setTimeout(() => setSaved(false), 3000);
-    } else {
-      toast.show({
-        title: "Erro",
-        message: error.message || "Erro ao atualizar perfil.",
-        variant: "error",
-      });
     }
     setLoading(false);
   };
@@ -176,13 +176,14 @@ export default function SettingsManager() {
           className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6"
         >
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
+            <label htmlFor="fullName" className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
               Nome Completo
             </label>
             <div className="relative group">
               <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
               <input
                 type="text"
+                id="fullName"
                 value={profile.fullName}
                 onChange={(e) =>
                   setProfile({ ...profile, fullName: e.target.value })
@@ -193,13 +194,14 @@ export default function SettingsManager() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
+            <label htmlFor="email" className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">
               E-mail de Cadastro
             </label>
             <div className="relative opacity-60">
               <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="email"
+                id="email"
                 disabled
                 value={profile.email}
                 className="w-full bg-slate-100 border-2 border-transparent rounded-2xl py-3 pl-11 pr-4 text-sm font-bold text-slate-900 cursor-not-allowed outline-none"

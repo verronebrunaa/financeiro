@@ -55,10 +55,7 @@ const PLANS = [
       "Histórico de 12 meses",
       "Suporte por e-mail",
     ],
-    limitations: [
-      "Sem exportação PDF",
-      "Sem histórico ilimitado",
-    ],
+    limitations: ["Sem exportação PDF", "Sem histórico ilimitado"],
   },
   {
     id: "premium" as Plan,
@@ -110,7 +107,7 @@ export default function PlansPage() {
         variant: "info",
       });
     }
-  }, [status, returnedPlan]);
+  }, [status, returnedPlan, toast, refresh]);
 
   const handleSubscribe = async (plan: Plan) => {
     if (!user) return;
@@ -129,7 +126,7 @@ export default function PlansPage() {
 
       const data = await res.json();
       if (data.init_point) {
-        window.location.href = data.init_point;
+        globalThis.location.href = data.init_point;
       } else {
         toast.show({
           title: "Erro",
@@ -148,7 +145,17 @@ export default function PlansPage() {
     }
   };
 
-  const colorMap: Record<string, { bg: string; text: string; border: string; badge: string; btn: string; btnHover: string }> = {
+  const colorMap: Record<
+    string,
+    {
+      bg: string;
+      text: string;
+      border: string;
+      badge: string;
+      btn: string;
+      btnHover: string;
+    }
+  > = {
     slate: {
       bg: "bg-slate-50",
       text: "text-slate-600",
@@ -185,8 +192,8 @@ export default function PlansPage() {
               Planos<span className="text-blue-600">.</span>
             </h1>
             <p className="text-slate-500 font-bold mt-2 text-base sm:text-lg max-w-xl mx-auto">
-              Escolha o plano ideal para suas necessidades financeiras.
-              Cancele quando quiser.
+              Escolha o plano ideal para suas necessidades financeiras. Cancele
+              quando quiser.
             </p>
           </header>
 
@@ -199,12 +206,15 @@ export default function PlansPage() {
                 <span className="font-black text-slate-900 uppercase">
                   {subscription.plan}
                 </span>
-                {subscription.currentPeriodEnd && subscription.plan !== "free" && (
-                  <span className="text-xs text-slate-400 font-medium">
-                    · válido até{" "}
-                    {new Date(subscription.currentPeriodEnd).toLocaleDateString("pt-BR")}
-                  </span>
-                )}
+                {subscription.currentPeriodEnd &&
+                  subscription.plan !== "free" && (
+                    <span className="text-xs text-slate-400 font-medium">
+                      · válido até{" "}
+                      {new Date(
+                        subscription.currentPeriodEnd,
+                      ).toLocaleDateString("pt-BR")}
+                    </span>
+                  )}
               </span>
             </div>
           )}
@@ -261,7 +271,7 @@ export default function PlansPage() {
                   <div className="mb-6">
                     {plan.price === 0 ? (
                       <div className="text-3xl font-black text-slate-900">
-                        R$0
+                        R$0{" "}
                         <span className="text-sm font-bold text-slate-400 ml-1">
                           /mês
                         </span>
@@ -284,7 +294,7 @@ export default function PlansPage() {
                         className="flex items-start gap-2 text-sm font-medium text-slate-700"
                       >
                         <FiCheck
-                          className={`${colors.text} mt-0.5 flex-shrink-0`}
+                          className={`${colors.text} mt-0.5 shrink-0`}
                           size={16}
                         />
                         {f}
@@ -295,7 +305,7 @@ export default function PlansPage() {
                         key={f}
                         className="flex items-start gap-2 text-sm font-medium text-slate-400 line-through"
                       >
-                        <span className="mt-0.5 flex-shrink-0 w-4 text-center">
+                        <span className="mt-0.5 shrink-0 w-4 text-center">
                           ✕
                         </span>
                         {f}

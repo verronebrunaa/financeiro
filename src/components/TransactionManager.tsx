@@ -600,7 +600,7 @@ export default function TransactionManager() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between bg-white rounded-2xl border border-slate-200 shadow-sm px-4 sm:px-6 py-3">
               <span className="text-xs font-bold text-slate-400">
-                {filteredTransactions.length} transação{filteredTransactions.length !== 1 ? "ões" : ""} · Página {page} de {totalPages}
+                {filteredTransactions.length} transação{filteredTransactions.length === 1 ? "" : "ões"} · Página {page} de {totalPages}
               </span>
               <div className="flex items-center gap-1">
                 <button
