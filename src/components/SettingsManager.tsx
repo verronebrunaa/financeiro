@@ -121,16 +121,23 @@ export default function SettingsManager() {
         .getPublicUrl(fileName).data;
       setProfilePic(publicUrl);
       // Salvar URL no perfil do banco
-      await supabase
+      const { error: updateError } = await supabase
         .from("profiles")
         .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
         .eq("id", user.id);
+      
+      if (updateError) {
+        console.error("Erro ao atualizar avatar_url:", updateError);
+        throw updateError;
+      }
+      
       toast.show({
         title: "Sucesso",
         message: "Foto de perfil atualizada!",
         variant: "success",
       });
     } catch (err: any) {
+      console.error("Erro completo:", err);
       toast.show({
         title: "Erro",
         message: err?.message || "Erro ao enviar foto.",
@@ -149,7 +156,7 @@ export default function SettingsManager() {
               Perfil Pessoal
             </h3>
             <p className="text-sm text-slate-500 font-medium">
-              Gerencie como suas informações aparecem no Finna.
+              Gerencie como suas informações aparecem no Finnan.
             </p>
           </div>
           <div className="relative group">

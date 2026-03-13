@@ -5,7 +5,6 @@ import {
   FiTarget,
   FiPlus,
   FiX,
-  FiLoader,
   FiAlertCircle,
   FiEdit2,
   FiTrash2,
@@ -14,6 +13,10 @@ import {
 import supabase from "../lib/supabaseClient";
 import toast from "react-hot-toast";
 import { useAuth } from "./AuthProvider";
+import { useFormValidation, budgetSchema } from "@/hooks/useFormValidation";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
+import LoadingState from "@/components/LoadingState";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type Budget = {
   id: string;
@@ -63,6 +66,10 @@ const MONTHS = [
 
 export default function BudgetManager() {
   const { user } = useAuth();
+  const { handleError } = useErrorHandler();
+  const { errors, validateAll, handleChange, handleBlur, clearErrors } = 
+    useFormValidation(budgetSchema);
+
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -70,6 +77,9 @@ export default function BudgetManager() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [detailBudget, setDetailBudget] = useState<Budget | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [budgetIdToDelete, setBudgetIdToDelete] = useState<string | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   // Form
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -192,6 +202,7 @@ export default function BudgetManager() {
       setSelectedMonth(viewMonth);
       setBudgetScope("single");
     }
+    clearErrors();
     setIsModalOpen(true);
   }
 
@@ -200,6 +211,7 @@ export default function BudgetManager() {
     setEditingBudget(null);
     setSelectedCategory("");
     setLimitAmount("");
+    clearErrors();
   }
 
   function getMonthsForScope(): string[] {
@@ -218,12 +230,27 @@ export default function BudgetManager() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedCategory || !limitAmount || !user?.id) return;
+    if (!selectedCategory || !limitAmount || !user?.id) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
 
-    const amount = Number(limitAmount);
-    if (amount <= 0) return;
+    // Validar dados antes de enviar
+    const validation = validateAll({
+      category_id: selectedCategory,
+      limit_amount: Number.parseFloat(limitAmount),
+      month: selectedMonth,
+    });
 
+    if (!validation.isValid) {
+      toast.error("Verifique os erros no formulário");
+      return;
+    }
+
+    setIsSaving(true);
     try {
+      const amount = Number.parseFloat(limitAmount);
+
       if (editingBudget) {
         const { error } = await supabase
           .from("budgets")
@@ -251,10 +278,11 @@ export default function BudgetManager() {
         toast.success(label);
       }
       closeModal();
-      loadData();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao salvar";
-      toast.error(msg);
+      await loadData();
+    } catch (err) {
+      handleError(err, "Erro ao salvar orçamento");
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -275,22 +303,28 @@ export default function BudgetManager() {
       if (error) throw error;
       const nextLabel = `${MONTHS[nextDate.getMonth()]} ${nextDate.getFullYear()}`;
       toast.success(`Orçamentos copiados para ${nextLabel}!`);
-      loadData();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao copiar";
-      toast.error(msg);
+      await loadData();
+    } catch (err) {
+      handleError(err, "Erro ao copiar orçamentos");
     }
   }
 
   async function handleDelete(id: string) {
+    setBudgetIdToDelete(id);
+    setIsDeleteConfirmOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!budgetIdToDelete) return;
     try {
-      const { error } = await supabase.from("budgets").delete().eq("id", id);
+      const { error } = await supabase.from("budgets").delete().eq("id", budgetIdToDelete);
       if (error) throw error;
       toast.success("Orçamento removido!");
-      loadData();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao excluir";
-      toast.error(msg);
+      setIsDeleteConfirmOpen(false);
+      setBudgetIdToDelete(null);
+      await loadData();
+    } catch (err) {
+      handleError(err, "Erro ao excluir orçamento");
     }
   }
 
@@ -317,11 +351,10 @@ export default function BudgetManager() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-        <FiLoader className="animate-spin mb-4" size={32} />
-        <p className="font-bold text-sm uppercase tracking-widest italic">
-          Carregando orçamentos...
-        </p>
+      <div className="flex flex-col items-center justify-center py-20">
+        <LoadingState isLoading={true}>
+          <div />
+        </LoadingState>
       </div>
     );
   }
@@ -537,13 +570,21 @@ export default function BudgetManager() {
                   htmlFor="category"
                   className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1"
                 >
-                  Categoria
+                  Categoria <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="category"
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-2xl py-3 px-4 font-bold text-slate-900 transition-all outline-none"
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    handleChange("category_id", e.target.value);
+                  }}
+                  onBlur={() => handleBlur("category_id")}
+                  className={`w-full bg-slate-50 border-2 transition-all rounded-2xl py-3 px-4 font-bold text-slate-900 outline-none ${
+                    errors.category_id
+                      ? "border-red-500 bg-red-50"
+                      : "border-transparent focus:bg-white focus:border-blue-600"
+                  }`}
                   required
                 >
                   <option value="">Selecione...</option>
@@ -553,6 +594,9 @@ export default function BudgetManager() {
                     </option>
                   ))}
                 </select>
+                {errors.category_id && (
+                  <p className="text-sm text-red-600 font-medium">{errors.category_id}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -560,7 +604,7 @@ export default function BudgetManager() {
                   htmlFor="limitAmount"
                   className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1"
                 >
-                  Limite Mensal (R$)
+                  Limite Mensal (R$) <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="limitAmount"
@@ -569,10 +613,21 @@ export default function BudgetManager() {
                   min="0.01"
                   placeholder="0,00"
                   value={limitAmount}
-                  onChange={(e) => setLimitAmount(e.target.value)}
-                  className="w-full bg-slate-50 border-2 border-transparent focus:bg-white focus:border-blue-600 rounded-2xl py-3 px-4 font-bold text-slate-900 transition-all outline-none"
+                  onChange={(e) => {
+                    setLimitAmount(e.target.value);
+                    handleChange("limit_amount", Number.parseFloat(e.target.value));
+                  }}
+                  onBlur={() => handleBlur("limit_amount")}
+                  className={`w-full bg-slate-50 border-2 transition-all rounded-2xl py-3 px-4 font-bold text-slate-900 outline-none ${
+                    errors.limit_amount
+                      ? "border-red-500 bg-red-50"
+                      : "border-transparent focus:bg-white focus:border-blue-600"
+                  }`}
                   required
                 />
+                {errors.limit_amount && (
+                  <p className="text-sm text-red-600 font-medium">{errors.limit_amount}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -629,9 +684,10 @@ export default function BudgetManager() {
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3.5 rounded-2xl shadow-xl shadow-blue-100 transition-all active:scale-95"
+                disabled={isSaving}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black py-3.5 rounded-2xl shadow-xl shadow-blue-100 transition-all active:scale-95"
               >
-                {editingBudget ? "Salvar Alterações" : "Criar Orçamento"}
+                {isSaving ? "Salvando..." : editingBudget ? "Salvar Alterações" : "Criar Orçamento"}
               </button>
             </form>
           </div>
@@ -743,6 +799,21 @@ export default function BudgetManager() {
           </div>
         );
       })()}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        title="Excluir Orçamento"
+        message="Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita."
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          setIsDeleteConfirmOpen(false);
+          setBudgetIdToDelete(null);
+        }}
+        isDangerous={true}
+      />
     </div>
   );
 }
