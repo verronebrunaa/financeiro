@@ -42,7 +42,7 @@ export type Feature =
 const FEATURE_ACCESS: Record<Feature, Plan[]> = {
   unlimited_transactions: ["pro", "premium"],
   unlimited_categories: ["pro", "premium"],
-  all_charts: ["pro", "premium"],
+  all_charts: ["free", "pro", "premium"],
   insights: ["pro", "premium"],
   debt_cloud: ["pro", "premium"],
   bulk_operations: ["pro", "premium"],
