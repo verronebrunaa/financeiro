@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+
 import Sidebar from "@/components/Sidebar";
 import BudgetManager from "@/components/BudgetManager";
 
