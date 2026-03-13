@@ -62,7 +62,7 @@ export default function ForgotPasswordPage() {
                 $
               </div>
               <span className="text-2xl font-bold tracking-tight italic">
-                Finna.
+                Finnan.
               </span>
             </div>
             <h2 className="text-4xl font-black leading-tight mb-6 tracking-tighter italic">
